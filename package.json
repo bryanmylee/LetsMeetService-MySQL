@@ -1,0 +1,25 @@
+{
+  "name": "letsmeetservice",
+  "version": "1.0.0",
+  "description": "The web service for LetsMeet",
+  "main": "out/Index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "node out/Index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bryanmylee/LetsMeetService.git"
+  },
+  "author": "Bryan Lee",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bryanmylee/LetsMeetService/issues"
+  },
+  "homepage": "https://github.com/bryanmylee/LetsMeetService#readme",
+  "dependencies": {
+    "@types/express": "^4.17.6",
+    "express": "^4.17.1"
+  }
+}
