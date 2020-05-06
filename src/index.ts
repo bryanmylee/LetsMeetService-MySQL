@@ -1,6 +1,10 @@
 import express, { Application } from 'express';
 import fs from 'fs';
 import https, { Server } from 'https';
+import cookieParser from 'cookie-parser';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 const key = fs.readFileSync(__dirname + '/../.certs/private.pem', 'utf8');
 const cert = fs.readFileSync(__dirname + '/../.certs/public.pem', 'utf8');
@@ -9,6 +13,20 @@ const passphrase = process.env.SSL_SECRET
 import { getEvent } from './databaseAccess';
 
 const app: Application = express();
+// Expose simple interface for cookies
+app.use(cookieParser());
+// Control cross-origin resource sharing
+app.use(
+  cors({
+    origin: `https://localhost:${process.env.CLIENT_PORT}`,
+    credentials: true,
+  })
+);
+// Support JSON-encoded bodies
+app.use(express.json());
+// Support URL-encoded bodies
+app.use(express.urlencoded({ extended: true }));
+
 const httpsServer: Server = https.createServer({key, cert, passphrase}, app);
 
 app.post('/new', (req, res) => {
