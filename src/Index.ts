@@ -1,5 +1,7 @@
 import express from 'express';
 
+import { getEvent } from './databaseAccess';
+
 const app: express.Application = express();
 
 app.post('/new', (req, res) => {
@@ -36,4 +38,5 @@ app.get('/', (_, res) => {
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
+  getEvent('GraciousSnarlingHorse').then(res => console.log(res));
 });
