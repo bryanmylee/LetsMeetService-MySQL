@@ -1,8 +1,14 @@
-import express from 'express';
+import express, { Application } from 'express';
+import fs from 'fs';
+import https, { Server } from 'https';
+const key = fs.readFileSync(__dirname + '/../.certs/private.pem', 'utf8');
+const cert = fs.readFileSync(__dirname + '/../.certs/public.pem', 'utf8');
+const passphrase = process.env.SSL_SECRET
 
 import { getEvent } from './databaseAccess';
 
-const app: express.Application = express();
+const app: Application = express();
+const httpsServer: Server = https.createServer({key, cert, passphrase}, app);
 
 app.post('/new', (req, res) => {
   res.send('Creating a new event.');
@@ -39,6 +45,6 @@ app.get('/', (_, res) => {
   res.send('LetsMeet Web Service.');
 });
 
-app.listen(process.env.PORT, () => {
+httpsServer.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
 });
