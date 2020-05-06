@@ -25,6 +25,10 @@ const poolConfig = {
 
 const client = mysqlx.getClient(connConfig, poolConfig);
 
+/**
+ * Returns an object describing the event.
+ * @param urlId The url identifier of the event
+ */
 export async function getEvent(urlId: string) {
   const details = await getEventDetails(urlId);
   const { id } = details;
@@ -51,8 +55,8 @@ async function getEventDetails(urlId: string) {
 }
 
 /**
- * Returns an array of timings in which the event is available.
- * @param id The internal id of the event
+ * Returns an array of intervals in which the event is available.
+ * @param id The internal identifier of the event
  */
 async function getEventIntervals(id: number) {
   const intervals: Interval[] = [];
@@ -69,6 +73,10 @@ async function getEventIntervals(id: number) {
   return intervals;
 }
 
+/**
+ * Returns an object with username keys and their available intervals as values.
+ * @param id The internal identifier of the event
+ */
 async function getEventUserIntervals(id: number) {
   let intervalsByUsername: {[username: string]: Interval[]} = {};
 
