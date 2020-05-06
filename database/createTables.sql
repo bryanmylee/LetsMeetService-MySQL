@@ -21,10 +21,11 @@ CREATE TABLE `event_interval` (
 );
 
 CREATE TABLE `event_user` (
-    event_id INT          NOT NULL,
-    username VARCHAR(255) NOT NULL,
-    password BINARY(60)   NOT NULL,
-    is_admin BOOLEAN      NOT NULL DEFAULT FALSE,
+    event_id      INT          NOT NULL,
+    username      VARCHAR(255) NOT NULL,
+    password      BINARY(60)   NOT NULL,
+    is_admin      BOOLEAN      NOT NULL DEFAULT FALSE,
+    refresh_token CHAR(60),
     PRIMARY KEY (event_id, username),
     FOREIGN KEY (event_id) REFERENCES `event`(id) ON DELETE CASCADE
 );
@@ -35,6 +36,7 @@ CREATE TABLE `user_interval` (
     start_dtime DATETIME     NOT NULL,
     end_dtime   DATETIME     NOT NULL,
     PRIMARY KEY (event_id, username, start_dtime),
-    FOREIGN KEY (event_id, username) REFERENCES `event_user`(event_id, username) ON DELETE CASCADE
+    FOREIGN KEY (event_id, username)
+            REFERENCES `event_user`(event_id, username) ON DELETE CASCADE
 );
 
