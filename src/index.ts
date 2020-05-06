@@ -10,7 +10,10 @@ app.post('/new', (req, res) => {
 
 app.get('/:eventId', (req, res) => {
   const { eventId } = req.params;
-  res.send(`eventId: ${eventId}`);
+  getEvent(eventId)
+    .then((event) => {
+      res.send(JSON.stringify(event));
+    });
 });
 
 app.post('/:eventId/login', (req, res) => {
@@ -38,5 +41,4 @@ app.get('/', (_, res) => {
 
 app.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
-  getEvent('GraciousSnarlingHorse').then(res => console.log(res));
 });
