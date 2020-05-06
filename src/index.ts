@@ -1,35 +1,23 @@
 import express, { Application } from 'express';
-import fs from 'fs';
-import https, { Server } from 'https';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
+import { Server } from 'https';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
-const key = fs.readFileSync(__dirname + '/../.certs/private.pem', 'utf8');
-const cert = fs.readFileSync(__dirname + '/../.certs/public.pem', 'utf8');
-const passphrase = process.env.SSL_SECRET
-
+import Interval from './types/Interval';
+import { configureApp, getHttpsServer } from './setup';
 import { getEvent } from './databaseAccess';
+import { createAccessToken, createRefreshToken } from './tokens';
 
 const app: Application = express();
-// Expose simple interface for cookies
-app.use(cookieParser());
-// Control cross-origin resource sharing
-app.use(
-  cors({
-    origin: `https://localhost:${process.env.CLIENT_PORT}`,
-    credentials: true,
-  })
-);
-// Support JSON-encoded bodies
-app.use(express.json());
-// Support URL-encoded bodies
-app.use(express.urlencoded({ extended: true }));
-
-const httpsServer: Server = https.createServer({key, cert, passphrase}, app);
+configureApp(app);
+const httpsServer: Server = getHttpsServer(app);
 
 app.post('/new', (req, res) => {
+  const body: {
+    username: string, passwordHash: string,
+    title: string, description: string, eventIntervals: Interval[],
+  } = req.body;
+  // Generate access and refresh tokens
   res.send('Creating a new event.');
 });
 
