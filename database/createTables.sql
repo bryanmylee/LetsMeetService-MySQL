@@ -12,7 +12,7 @@ CREATE TABLE `event` (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE `event_timing` (
+CREATE TABLE `event_interval` (
     event_id    INT      NOT NULL,
     start_dtime DATETIME NOT NULL,
     end_dtime   DATETIME NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `event_user` (
     FOREIGN KEY (event_id) REFERENCES `event`(id) ON DELETE CASCADE
 );
 
-CREATE TABLE `timing` (
+CREATE TABLE `user_interval` (
     event_id    INT          NOT NULL,
     username    VARCHAR(255) NOT NULL,
     start_dtime DATETIME     NOT NULL,
