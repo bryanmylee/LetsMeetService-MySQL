@@ -1,6 +1,7 @@
 import express, { Application } from 'express';
 import fs from 'fs';
 import https, { Server } from 'https';
+
 const key = fs.readFileSync(__dirname + '/../.certs/private.pem', 'utf8');
 const cert = fs.readFileSync(__dirname + '/../.certs/public.pem', 'utf8');
 const passphrase = process.env.SSL_SECRET
@@ -18,7 +19,7 @@ app.get('/:eventId', (req, res) => {
   const { eventId } = req.params;
   getEvent(eventId)
     .then((event) => {
-      res.send(JSON.stringify(event));
+      res.send(event);
     });
 });
 
