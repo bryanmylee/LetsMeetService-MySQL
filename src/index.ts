@@ -5,28 +5,42 @@ import bcrypt from 'bcryptjs';
 
 import Interval from './types/Interval';
 import { configureApp, getHttpsServer } from './setup';
-import { getEvent } from './databaseAccess';
+import { getEvent, createNewEvent } from './database/eventAccess';
 import { createAccessToken, createRefreshToken } from './tokens';
 
 const app: Application = express();
 configureApp(app);
 const httpsServer: Server = getHttpsServer(app);
 
-app.post('/new', (req, res) => {
-  const body: {
-    username: string, passwordHash: string,
-    title: string, description: string, eventIntervals: Interval[],
-  } = req.body;
-  // Generate access and refresh tokens
-  res.send('Creating a new event.');
+app.post('/new', async (req, res, next) => {
+  try {
+    const body: {
+      username: string, passwordHash: string,
+      title: string, description: string,
+      eventIntervals: {start: string, end: string}[],
+    } = req.body;
+    const { username, passwordHash, title, description, eventIntervals } = body;
+    const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
+    // Insert the event and user into the database
+    const { newId, urlId } = await createNewEvent(
+        title, description, username, passwordHash, parsedIntervals);
+    // Generate access and refresh tokens
+    const accessToken = createAccessToken({ username });
+    const refreshToken = createRefreshToken({ username });
+    res.send({ urlId });
+  } catch (err) {
+    return next(err);
+  }
 });
 
-app.get('/:eventId', (req, res) => {
-  const { eventId } = req.params;
-  getEvent(eventId)
-    .then((event) => {
-      res.send(event);
-    });
+app.get('/:eventId', async (req, res, next) => {
+  try {
+    const { eventId } = req.params;
+    const event = await getEvent(eventId);
+    res.send(event);
+  } catch (err) {
+    return next(err);
+  }
 });
 
 app.post('/:eventId/login', (req, res) => {
