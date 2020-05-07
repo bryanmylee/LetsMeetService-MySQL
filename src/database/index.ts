@@ -1,7 +1,7 @@
 import { getClient } from '@mysql/xdevapi';
 
 import { getEvent, createNewEvent } from './eventAccess';
-import { setRefreshToken } from './userAccess';
+import { setRefreshToken, insertNewUser } from './userAccess';
 
 const {
   DB_HOST, DB_NAME, DB_USER, DB_PASS,
@@ -30,4 +30,5 @@ export default ({
   getEvent,
   createNewEvent,
   setRefreshToken,
+  insertNewUser,
 });
