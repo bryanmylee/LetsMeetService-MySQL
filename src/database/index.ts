@@ -1,5 +1,8 @@
 import { getClient } from '@mysql/xdevapi';
 
+import { getEvent, createNewEvent } from './eventAccess';
+import { setRefreshToken } from './userAccess';
+
 const {
   DB_HOST, DB_NAME, DB_USER, DB_PASS,
   DB_POOL_IDLE, DB_POOL_SIZE, DB_POOL_QUEUE_TIMEOUT
@@ -23,4 +26,8 @@ const poolConfig = {
 
 const client = getClient(connConfig, poolConfig);
 
-export default client;
+export default ({
+  getEvent: getEvent.bind(this, client),
+  createNewEvent: createNewEvent.bind(this, client),
+  setRefreshToken: setRefreshToken.bind(this, client),
+});

@@ -1,23 +1,22 @@
-import mysqlx from '@mysql/xdevapi';
 import { generateId } from 'gfycat-ids';
 
-import client from './index';
 import Interval from '../types/Interval';
-import dayjs, { Dayjs } from 'dayjs';
 
 /**
  * Get details of an event.
- * @param urlId The url identifier of the event
+ * @param client: The database client.
+ * @param urlId The url identifier of the event.
  * @returns An object describing an event.
  */
-export async function getEvent(urlId: string) {
+export async function getEvent(client: any, urlId: string) {
   const session = await client.getSession();
+
   const details = await getEventDetails(session, urlId);
   const { id } = details;
   return ({
-    ... details,
-    eventIntervals: await getEventIntervals(id, session),
-    userIntervals: await getEventUserIntervals(id, session),
+    ...details,
+    eventIntervals: await getEventIntervals(session, id),
+    userIntervals: await getEventUserIntervals(session, id),
   });
 }
 
@@ -93,6 +92,7 @@ async function getEventUserIntervals(session: any, id: number) {
 
 /**
  * Insert a new event into the database.
+ * @param client: The database client.
  * @param title The title of the event.
  * @param description The description of the event.
  * @param username The username of the person creating the event.
@@ -103,9 +103,10 @@ async function getEventUserIntervals(session: any, id: number) {
  * @returns An object with the new internal identifier and new url idenfifier.
  */
 export async function createNewEvent(
-    title: string, description: string,
+    client: any, title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
   const session = await client.getSession();
+
   const { newId, urlId } = await insertEventAndUserDetails(
       session, title, description, username, passwordHash);
   await insertEventIntervals(session, newId, eventIntervals);
