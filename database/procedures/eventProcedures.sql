@@ -47,17 +47,3 @@ CREATE PROCEDURE update_url_id(
     UPDATE event
         SET url_id = _url_id
         WHERE id = _id;
-
-/*
- * |-------|
- * | Users |
- * |-------|
- */
-CREATE PROCEDURE set_refresh_token(
-        IN _event_id INT,
-        IN _username VARCHAR(255),
-        IN _refresh_token TEXT)
-    UPDATE event_user
-        SET refresh_token = _refresh_token
-        WHERE event_id = _event_id
-        AND username = _username;
