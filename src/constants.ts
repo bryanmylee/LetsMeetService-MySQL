@@ -1,0 +1,1 @@
+export const DB_DUPLICATE_ENTRY = 1062;
