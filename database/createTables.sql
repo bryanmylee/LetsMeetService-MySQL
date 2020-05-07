@@ -25,7 +25,7 @@ CREATE TABLE `event_user` (
     username      VARCHAR(255) NOT NULL,
     password      BINARY(60)   NOT NULL,
     is_admin      BOOLEAN      NOT NULL DEFAULT FALSE,
-    refresh_token CHAR(60),
+    refresh_token TEXT,
     PRIMARY KEY (event_id, username),
     FOREIGN KEY (event_id) REFERENCES `event`(id) ON DELETE CASCADE
 );
