@@ -14,6 +14,10 @@ CREATE PROCEDURE set_refresh_token(
         WHERE event_id = _event_id
         AND username = _username;
 
+/*
+ * If (event_id, username) is not unique, throw (1062, "Duplicate entry
+ * <event_id-username> for key ...")
+ */
 CREATE PROCEDURE insert_new_user(
         IN _event_id INT,
         IN _username VARCHAR(255),
