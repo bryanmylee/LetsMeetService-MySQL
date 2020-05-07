@@ -1,35 +1,14 @@
 import mysqlx from '@mysql/xdevapi';
 import { generateId } from 'gfycat-ids';
 
+import client from './index';
 import Interval from '../types/Interval';
 import dayjs, { Dayjs } from 'dayjs';
 
-const {
-  DB_HOST, DB_NAME, DB_USER, DB_PASS,
-  DB_POOL_IDLE, DB_POOL_SIZE, DB_POOL_QUEUE_TIMEOUT
-} = process.env;
-
-const connConfig = {
-  host: DB_HOST,
-  schema: DB_NAME,
-  user: DB_USER,
-  password: DB_PASS,
-};
-
-const poolConfig = {
-  pooling: {
-    enabled: true,
-    maxIdleTime: parseInt(DB_POOL_IDLE ?? '3e5', 10),
-    maxSize: parseInt(DB_POOL_SIZE ?? '25', 10),
-    queueTimeout: parseInt(DB_POOL_QUEUE_TIMEOUT ?? '1e5', 10),
-  }
-};
-
-const client = mysqlx.getClient(connConfig, poolConfig);
-
 /**
- * Returns an object describing the event.
+ * Get details of an event.
  * @param urlId The url identifier of the event
+ * @returns An object describing an event.
  */
 export async function getEvent(urlId: string) {
   const session = await client.getSession();
@@ -43,8 +22,10 @@ export async function getEvent(urlId: string) {
 }
 
 /**
- * Returns an object containing _shallow_ details of the event.
- * @param urlId The url identifier of the event
+ * Get _shallow_ details of an event.
+ * @param session The current database session.
+ * @param urlId The url identifier of the event.
+ * @returns An object containing _shallow_ details of an event.
  */
 async function getEventDetails(session: any, urlId: string) {
   const rs = await session
@@ -57,8 +38,10 @@ async function getEventDetails(session: any, urlId: string) {
 }
 
 /**
- * Returns an array of intervals in which the event is available.
- * @param id The internal identifier of the event
+ * Get the available intervals of an event.
+ * @param session The current database session.
+ * @param id The internal identifier of the event.
+ * @returns An array of intervals in which the event is available.
  */
 async function getEventIntervals(session: any, id: number) {
   const intervals: Interval[] = [];
@@ -78,8 +61,11 @@ async function getEventIntervals(session: any, id: number) {
 }
 
 /**
- * Returns an object with username keys and their available intervals as values.
- * @param id The internal identifier of the event
+ * Get user schedule information of an event.
+ * @param session The current database session.
+ * @param id The internal identifier of the event.
+ * @returns An object with username keys and their available intervals as
+ * values.
  */
 async function getEventUserIntervals(session: any, id: number) {
   let intervalsByUsername: {[username: string]: Interval[]} = {};
@@ -105,17 +91,38 @@ async function getEventUserIntervals(session: any, id: number) {
   return intervalsByUsername;
 }
 
+/**
+ * Insert a new event into the database.
+ * @param title The title of the event.
+ * @param description The description of the event.
+ * @param username The username of the person creating the event.
+ * @param passwordHash The password hash of the person creating the event.
+ * @param eventIntervals The intervals in which the event is available. By
+ * default, the person creating the event will have the same intervals as the
+ * event itself.
+ * @returns An object with the new internal identifier and new url idenfifier.
+ */
 export async function createNewEvent(
     title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
   const session = await client.getSession();
-  const { newId, urlId } = await insertEventDetails(
+  const { newId, urlId } = await insertEventAndUserDetails(
       session, title, description, username, passwordHash);
   await insertEventIntervals(session, newId, eventIntervals);
+  await insertUserIntervals(session, newId, username, eventIntervals);
   return { newId, urlId };
 }
 
-async function insertEventDetails(
+/**
+ * Insert _shallow_ event and user details.
+ * @param session The current database session.
+ * @param title The title of the event.
+ * @param description The description of the event.
+ * @param username The username of the person creating the event.
+ * @param passwordHash The password hash of the person creating the event.
+ * @returns An object with the new internal identifier and new url idenfifier.
+ */
+async function insertEventAndUserDetails(
     session: any, title: string, description: string,
     username: string, passwordHash: string) {
   const rs = await session
@@ -129,17 +136,43 @@ async function insertEventDetails(
   return { newId, urlId };
 }
 
+/**
+ * Insert available intervals of an event.
+ * @param session The current database session.
+ * @param eventId The internal identifier of an event.
+ * @param eventIntervals The available intervals of the event.
+ */
 async function insertEventIntervals(
     session: any, eventId: number, eventIntervals: Interval[]) {
   const { length } = eventIntervals;
   if (length === 0) return;
-  const sqlQuery =
+  const query =
       'INSERT INTO event_interval (event_id, start_dtime, end_dtime) VALUES '
       + '(?, ?, ?),'.repeat(length - 1) + '(?, ?, ?)';
   const params = eventIntervals.flatMap((interval: Interval) => {
     const { start, end } = interval.toSQL();
     return [eventId, start, end];
-  })
-  await session.sql(sqlQuery).bind(params).execute();
-  console.log(sqlQuery);
+  });
+  await session.sql(query).bind(params).execute();
+}
+
+/**
+ * Insert schedule information of a user.
+ * @param session The current database session.
+ * @param eventId The internal identifier of an event.
+ * @param username The username of the user.
+ * @param intervals The schedule information of the user.
+ */
+async function insertUserIntervals(
+    session: any, eventId: number, username: string, intervals: Interval[]) {
+  const { length } = intervals;
+  if (length === 0) return;
+  const query =
+      'INSERT INTO user_interval (event_id, username, start_dtime, end_dtime) VALUES '
+      + '(?, ?, ?, ?),'.repeat(length - 1) + '(?, ?, ?, ?)';
+  const params = intervals.flatMap((interval: Interval) => {
+    const { start, end } = interval.toSQL();
+    return [eventId, username, start, end];
+  });
+  await session.sql(query).bind(params).execute();
 }
