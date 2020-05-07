@@ -1,6 +1,6 @@
 USE lets_meet;
 
-INSERT INTO `event`(id, url_id, title, description, date_created) VALUES
+INSERT INTO `event`(id, url_id, title, description, dtime_created) VALUES
 (1, "GraciousSnarlingHorse", "First event",  "An event to test the database",
     "2020-05-05 04:00:00"), /* 2020-05-05 12pm+8*/
 (2, "FatBumblingBee",        "Second event", "An event to test the database",

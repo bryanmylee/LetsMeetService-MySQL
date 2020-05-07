@@ -4,11 +4,11 @@ USE lets_meet;
 SET GLOBAL time_zone = '+00:00';
 
 CREATE TABLE `event` (
-    id           INT          NOT NULL AUTO_INCREMENT,
-    url_id       VARCHAR(255) NOT NULL UNIQUE, INDEX(url_id(10)),
-    title        VARCHAR(255) NOT NULL,
-    description  VARCHAR(255) NOT NULL DEFAULT "",
-    date_created DATETIME     NOT NULL DEFAULT NOW(),
+    id            INT          NOT NULL AUTO_INCREMENT,
+    url_id        VARCHAR(255) UNIQUE, INDEX(url_id(10)),
+    title         VARCHAR(255) NOT NULL,
+    description   VARCHAR(255) NOT NULL DEFAULT "",
+    dtime_created DATETIME     NOT NULL DEFAULT NOW(),
     PRIMARY KEY (id)
 );
 
