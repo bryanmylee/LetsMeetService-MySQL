@@ -1,4 +1,5 @@
 import Interval from '../types/Interval';
+import { getId } from './eventAccess';
 
 /**
  * Store and associate a refresh token with a user in the database.
@@ -15,12 +16,22 @@ export async function setRefreshToken(
       .bind([eventId, username, refreshToken]).execute();
 }
 
+/**
+ * Add a new user to an event.
+ * @param session The current database session.
+ * @param eventUrl The url identifier of the event.
+ * @param username The username of the new user.
+ * @param passwordHash The password hash of the new user.
+ * @param intervals The intervals which the user selected.
+ * @returns The internal identifier of the event.
+ */
 export async function insertNewUser(
     session: any, eventUrl: string, username: string, passwordHash: string,
     intervals: Interval[]) {
-  const eventId = 0;
+  const eventId = await getId(session, eventUrl);
   await insertNewUserDetails(session, eventId, username, passwordHash);
   await insertUserIntervals(session, eventId, username, intervals);
+  return eventId;
 }
 
 async function insertNewUserDetails(
