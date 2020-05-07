@@ -1,17 +1,13 @@
-import express, { Application, Response } from 'express';
+import express, { Application } from 'express';
 import { Server } from 'https';
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 import Interval from './types/Interval';
 import { configureApp, getHttpsServer } from './setup';
-import {
-  createAccessToken,
-  createRefreshToken,
-  setRefreshTokenCookie
-} from './tokens';
 import database, { client } from './database';
 import { DB_DUPLICATE_ENTRY } from './constants';
+import { login } from './authorization';
+import { getRefreshTokenPayload } from './tokens';
 
 const app: Application = express();
 configureApp(app);
@@ -112,19 +108,16 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     if (refreshToken == null) throw new Error('Refresh token not found.');
 
     // Verify that the token is not tampered with, and retrieve the payload.
-    const payload: {
-      uid: string,
-      evt: string,
-    } = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as any;
+    const { username } = getRefreshTokenPayload(refreshToken);
 
     const session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
     const storedToken = await database.getUserRefreshToken(
-        session, eventId, payload.uid);
+        session, eventId, username);
     if (storedToken == null) throw new Error('User invalid.');
     if (storedToken !== refreshToken) throw new Error('Refresh token invalid');
 
-    login(session, res, eventId, eventUrl, payload.uid);
+    login(session, res, eventId, eventUrl, username);
   } catch (err) {
     res.status(400);
     res.send({
@@ -161,28 +154,3 @@ app.get('/', (_, res) => {
 httpsServer.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
 });
-
-/**
- * Log a user in and persist the session by storing and sending tokens through
- * cookies and the HTTP/S response.
- * @param session The current database session.
- * @param res The HTTP/S response to set cookies on and send back.
- * @param eventId The internal identifier of the event.
- * @param eventUrl The url identifier of the event.
- * @param username The username of the user logging in.
- */
-async function login(
-    session: any, res: Response, eventId: number,
-    eventUrl: string, username: string) {
-  const accessToken = createAccessToken({ uid: username, evt: eventUrl });
-  const refreshToken = createRefreshToken({ uid: username, evt: eventUrl });
-
-  await database.setRefreshToken(session, eventId, username, refreshToken);
-
-  setRefreshTokenCookie(res, refreshToken, eventUrl);
-  res.send({
-    eventUrl,
-    accessToken,
-    accessTokenLifetime: process.env.ACCESS_TOKEN_EXPIRY ?? '15m',
-  });
-}

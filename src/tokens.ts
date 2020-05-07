@@ -1,7 +1,12 @@
 import jwt, { Secret } from 'jsonwebtoken';
 import { Response } from 'express';
+import { createNewEvent } from './database/eventAccess';
 
-export function createAccessToken(payload: {[key: string]: string}) {
+export function createAccessToken(eventUrl: string, username: string) {
+  const payload = {
+    evt: eventUrl,
+    uid: username,
+  };
   return jwt.sign(
       payload,
       process.env.ACCESS_TOKEN_SECRET as Secret,
@@ -9,12 +14,38 @@ export function createAccessToken(payload: {[key: string]: string}) {
   );
 }
 
-export function createRefreshToken(payload: {[key: string]: string}) {
+export function createRefreshToken(eventUrl: string, username: string) {
+  const payload = {
+    evt: eventUrl,
+    uid: username,
+  };
   return jwt.sign(
       payload,
       process.env.REFRESH_TOKEN_SECRET as Secret,
       { expiresIn: process.env.REFRESH_TOKEN_EXPIRY ?? '7d' }
   );
+}
+
+export function getAccessTokenPayload(token: string) {
+  const payload: {
+    evt: string,
+    uid: string,
+  } = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET as Secret) as any;
+  return {
+    eventUrl: payload.evt,
+    username: payload.uid,
+  };
+}
+
+export function getRefreshTokenPayload(token: string) {
+  const payload: {
+    evt: string,
+    uid: string,
+  } = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET as Secret) as any;
+  return {
+    eventUrl: payload.evt,
+    username: payload.uid,
+  };
 }
 
 /**
