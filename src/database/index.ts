@@ -1,7 +1,11 @@
 import { getClient } from '@mysql/xdevapi';
 
-import { getEvent, createNewEvent } from './eventAccess';
-import { setRefreshToken, insertNewUser } from './userAccess';
+import { getId, getEvent, createNewEvent } from './eventAccess';
+import {
+  setRefreshToken,
+  insertNewUser,
+  getUserCredentials,
+} from './userAccess';
 
 const {
   DB_HOST, DB_NAME, DB_USER, DB_PASS,
@@ -27,8 +31,10 @@ const poolConfig = {
 export const client = getClient(connConfig, poolConfig);
 
 export default ({
+  getId,
   getEvent,
   createNewEvent,
   setRefreshToken,
   insertNewUser,
+  getUserCredentials,
 });

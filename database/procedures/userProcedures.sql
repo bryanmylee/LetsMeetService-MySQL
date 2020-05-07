@@ -24,3 +24,10 @@ CREATE PROCEDURE insert_new_user(
         IN _password VARCHAR(255))
     INSERT INTO event_user (event_id, username, password) VALUES
     (_event_id, _username, _password);
+
+CREATE PROCEDURE get_user_credentials(
+        IN _event_id INT,
+        IN _username VARCHAR(255))
+    SELECT password FROM event_user
+    WHERE event_id = _event_id
+    AND username = _username;

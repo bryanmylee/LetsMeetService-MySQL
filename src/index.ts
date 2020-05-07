@@ -19,12 +19,15 @@ const httpsServer: Server = getHttpsServer(app);
 
 app.post('/new', async (req, res, next) => {
   try {
-    const { username, passwordHash, title, description, eventIntervals }: {
-      username: string, passwordHash: string,
+    const { username, password, title, description, eventIntervals }: {
+      username: string, password: string,
       title: string, description: string,
       eventIntervals: {start: string, end: string}[]
     } = req.body;
     const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
+
+    const saltLength = parseInt(process.env.PASSWORD_SALT_LENGTH ?? '12', 10);
+    const passwordHash = await bcrypt.hash(password, saltLength);
 
     const session = await client.getSession();
     const { newId, eventUrl } = await database.createNewEvent(
@@ -47,8 +50,29 @@ app.get('/:eventUrl', async (req, res, next) => {
   }
 });
 
-app.post('/:eventUrl/login', (req, res) => {
-  res.send('Verifying user credentials...');
+app.post('/:eventUrl/login', async (req, res, next) => {
+  try {
+    const { eventUrl } = req.params;
+    const { username, password }: {
+      username: string, password: string,
+    } = req.body;
+
+    const session = await client.getSession();
+    const eventId = await database.getId(session, eventUrl);
+    const storedHash = await database.getUserCredentials(
+        session, eventId, username);
+    if (storedHash === null) throw new Error('User not found.');
+
+    const valid = await bcrypt.compare(password, storedHash);
+    if (!valid) throw new Error('Password invalid');
+    await login(session, res, eventId, eventUrl, username);
+  } catch (err) {
+    console.log(err);
+    res.status(400);
+    res.send({
+      error: err.message
+    });
+  }
 });
 
 app.post('/:eventUrl/refresh_token', (req, res) => {
@@ -64,15 +88,19 @@ app.post('/:eventUrl/:username/edit', (req, res) => {
 app.post('/:eventUrl/new_user', async (req, res, next) => {
   try {
     const { eventUrl } = req.params;
-    const { username, passwordHash, intervals }: {
-      username: string, passwordHash: string,
+    const { username, password, intervals }: {
+      username: string, password: string,
       intervals: {start: string, end: string}[]
     } = req.body;
     const parsedIntervals = intervals.map(Interval.fromISO);
 
+    const saltLength = parseInt(process.env.PASSWORD_SALT_LENGTH ?? '12', 10);
+    const passwordHash = await bcrypt.hash(password, saltLength);
+
     const session = await client.getSession();
-    const eventId = await database.insertNewUser(
-        session, eventUrl, username, passwordHash, parsedIntervals);
+    const eventId = await database.getId(session, eventUrl);
+    await database.insertNewUser(
+        session, eventId, username, passwordHash, parsedIntervals);
     login(session, res, eventId, eventUrl, username);
   } catch (err) {
     console.log(err);

@@ -19,19 +19,16 @@ export async function setRefreshToken(
 /**
  * Add a new user to an event.
  * @param session The current database session.
- * @param eventUrl The url identifier of the event.
+ * @param eventId The internal identifier of the event.
  * @param username The username of the new user.
  * @param passwordHash The password hash of the new user.
  * @param intervals The intervals which the user selected.
- * @returns The internal identifier of the event.
  */
 export async function insertNewUser(
-    session: any, eventUrl: string, username: string, passwordHash: string,
+    session: any, eventId: number, username: string, passwordHash: string,
     intervals: Interval[]) {
-  const eventId = await getId(session, eventUrl);
   await insertNewUserDetails(session, eventId, username, passwordHash);
   await insertUserIntervals(session, eventId, username, intervals);
-  return eventId;
 }
 
 /**
@@ -67,4 +64,25 @@ export async function insertUserIntervals(
     return [eventId, username, start, end];
   });
   await session.sql(query).bind(params).execute();
+}
+
+/**
+ * Get the credentials of a user.
+ * @param session The current database session.
+ * @param eventId The internal identifier of the event to which the user
+ * belongs.
+ * @param username The username of the user to find credentials of.
+ * @returns The password hash of the user account. If the user does not exist,
+ * return null.
+ */
+export async function getUserCredentials(
+    session: any, eventId: number, username: string): Promise<string|null> {
+  const rs = await session
+      .sql('CALL get_user_credentials(?, ?)')
+      .bind([eventId, username]).execute();
+  let row: [Buffer];
+  if (row = rs.fetchOne()) {
+    return row[0].toString('utf8');
+  }
+  return null;
 }
