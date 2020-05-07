@@ -6,7 +6,7 @@ import Interval from './types/Interval';
 import { configureApp, getHttpsServer } from './setup';
 import database, { client } from './database';
 import { DB_DUPLICATE_ENTRY } from './constants';
-import { login } from './authorization';
+import { login, getAuthorizationPayload } from './authorization';
 import { getRefreshTokenPayload } from './tokens';
 
 const app: Application = express();
@@ -29,6 +29,24 @@ app.post('/new', async (req, res) => {
     const { newId, eventUrl } = await database.createNewEvent(
         session, title, description, username, passwordHash, parsedIntervals);
     await login(session, res, newId, eventUrl, username);
+  } catch (err) {
+    res.status(400);
+    res.send({
+      error: err.message,
+    });
+  }
+});
+
+app.post('/:eventUrl/edit', async (req, res) => {
+  try {
+    const { eventUrl } = req.params;
+    const payload = getAuthorizationPayload(req);
+    if (!payload.isAdmin || payload.eventUrl !== eventUrl) {
+      throw new Error('Not authorized.');
+    }
+    res.send({
+      message: "Work in progress",
+    });
   } catch (err) {
     res.status(400);
     res.send({
@@ -127,9 +145,21 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
 });
 
 app.post('/:eventUrl/:username/edit', (req, res) => {
-  // Check for access token
-  const { eventUrl, username } = req.params;
-  res.send(`Updating user: ${username} information on eventUrl: ${eventUrl}.`);
+  try {
+    const { eventUrl, username } = req.params;
+    const payload = getAuthorizationPayload(req);
+    if (payload.eventUrl !== eventUrl || payload.username !== username) {
+      throw new Error('Not authorized.');
+    }
+    res.send({
+      message: "Work in progress",
+    });
+  } catch (err) {
+    res.status(400);
+    res.send({
+      error: err.message,
+    });
+  }
 });
 
 app.get('/:eventUrl', async (req, res) => {

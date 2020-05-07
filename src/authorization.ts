@@ -9,14 +9,13 @@ import {
   setRefreshTokenCookie
 } from './tokens';
 
-export function getAuthorizedUsername(req: Request) {
+export function getAuthorizationPayload(req: Request) {
   const { authorization } = req.headers;
   if (!authorization) throw new Error('Authentication not found.');
 
   // Auth header is in the format: 'Bearer {token}'
   const token = authorization.split(' ')[1];
-  const { username } = getAccessTokenPayload(token);
-  return username;
+  return getAccessTokenPayload(token);
 }
 
 /**
