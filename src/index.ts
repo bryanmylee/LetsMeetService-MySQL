@@ -14,12 +14,11 @@ const httpsServer: Server = getHttpsServer(app);
 
 app.post('/new', async (req, res, next) => {
   try {
-    const body: {
+    const { username, passwordHash, title, description, eventIntervals}: {
       username: string, passwordHash: string,
       title: string, description: string,
-      eventIntervals: {start: string, end: string}[],
+      eventIntervals: {start: string, end: string}[]
     } = req.body;
-    const { username, passwordHash, title, description, eventIntervals } = body;
     const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
     // Insert the event and user into the database
     const { newId, urlId } = await createNewEvent(
