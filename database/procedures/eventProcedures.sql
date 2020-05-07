@@ -5,6 +5,9 @@ USE lets_meet;
  * | Events |
  * |--------|
  */
+CREATE PROCEDURE get_event_id(IN _url_id VARCHAR(255))
+    SELECT id FROM event WHERE url_id = _url_id;
+
 CREATE PROCEDURE get_event_details(IN _url_id VARCHAR(255))
     SELECT id, title, description, dtime_created FROM event
     WHERE url_id = _url_id;

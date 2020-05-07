@@ -2,15 +2,28 @@ import { generateId } from 'gfycat-ids';
 
 import Interval from '../types/Interval';
 import { insertUserIntervals } from './userAccess';
+import { DB_DUPLICATE_ENTRY } from '../constants';
+
+/**
+ * Get the internal identifier of an event.
+ * @param session The current database session.
+ * @param eventUrl The url identifier to convert.
+ * @returns The internal identifier of an event.
+ */
+export async function getId(session: any, eventUrl: string): Promise<number> {
+  const rs = await session
+      .sql('CALL get_event_id(?)').bind(eventUrl).execute();
+  return rs.fetchOne()[0];
+}
 
 /**
  * Get details of an event.
  * @param session: The current database session.
- * @param urlId The url identifier of the event.
+ * @param eventUrl The url identifier of the event.
  * @returns An object describing an event.
  */
-export async function getEvent(session: any, urlId: string) {
-  const details = await getEventDetails(session, urlId);
+export async function getEvent(session: any, eventUrl: string) {
+  const details = await getEventDetails(session, eventUrl);
   const { id } = details;
   return ({
     ...details,
@@ -22,17 +35,17 @@ export async function getEvent(session: any, urlId: string) {
 /**
  * Get _shallow_ details of an event.
  * @param session The current database session.
- * @param urlId The url identifier of the event.
+ * @param eventUrl The url identifier of the event.
  * @returns An object containing _shallow_ details of an event.
  */
-async function getEventDetails(session: any, urlId: string) {
+async function getEventDetails(session: any, eventUrl: string) {
   const rs = await session
       .sql('CALL get_event_details(?)')
-      .bind(urlId).execute();
+      .bind(eventUrl).execute();
   const row: [number, string, string, number] = rs.fetchOne();
   const [ id, title, description, dateCreatedInMs ] = row;
   const dateCreated = new Date(dateCreatedInMs);
-  return { id, urlId, title, description, dateCreated };
+  return { id, eventUrl, title, description, dateCreated };
 }
 
 /**
@@ -104,12 +117,11 @@ async function getEventUserIntervals(session: any, id: number) {
 export async function createNewEvent(
     session: any, title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
-
-  const { newId, urlId } = await insertEventAndUserDetails(
+  const { newId, eventUrl } = await insertEventAndUserDetails(
       session, title, description, username, passwordHash);
   await insertEventIntervals(session, newId, eventIntervals);
   await insertUserIntervals(session, newId, username, eventIntervals);
-  return { newId, urlId };
+  return { newId, eventUrl };
 }
 
 /**
@@ -125,14 +137,29 @@ async function insertEventAndUserDetails(
     session: any, title: string, description: string,
     username: string, passwordHash: string) {
   const rs = await session
-      .sql('CALL insert_new_event(?, ?, ?, ?)')
-      .bind([title, description, username, passwordHash]).execute();
+    .sql('CALL insert_new_event(?, ?, ?, ?)')
+    .bind([title, description, username, passwordHash]).execute();
   const newId: number = rs.fetchOne()[0];
-  const urlId: string = generateId(newId, 3);
-  await session
-      .sql('CALL update_url_id(?, ?)')
-      .bind([newId, urlId]).execute();
-  return { newId, urlId };
+
+  let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '3', 10);
+  while (true) {
+    try {
+      const eventUrl: string = generateId(newId, numAdjectives);
+      await session
+        .sql('CALL update_url_id(?, ?)')
+        .bind([newId, eventUrl]).execute();
+      return { newId, eventUrl };
+    } catch (err) {
+      const { info } = err;
+      // On the off chance that a duplicate identifier is generated, increase
+      // the number of adjectives used.
+      if (info?.code === DB_DUPLICATE_ENTRY) {
+        numAdjectives++;
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 /**
