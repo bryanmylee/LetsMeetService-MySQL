@@ -87,6 +87,14 @@ export async function getUserCredentials(
   return null;
 }
 
+/**
+ * Get the refresh token of a user stored in database.
+ * @param session The current database session.
+ * @param eventId The internal identifier of the event to which the user
+ * belongs.
+ * @param username The username of the user.
+ * @returns The refresh token of the user.
+ */
 export async function getUserRefreshToken(
     session: any, eventId: number, username: string) {
   const rs = await session
