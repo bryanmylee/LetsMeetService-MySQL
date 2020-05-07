@@ -39,4 +39,3 @@ CREATE TABLE `user_interval` (
     FOREIGN KEY (event_id, username)
             REFERENCES `event_user`(event_id, username) ON DELETE CASCADE
 );
-
