@@ -13,7 +13,11 @@ import { DB_DUPLICATE_ENTRY } from '../constants';
 export async function getId(session: any, eventUrl: string): Promise<number> {
   const rs = await session
       .sql('CALL get_event_id(?)').bind(eventUrl).execute();
-  return rs.fetchOne()[0];
+  let row: [number];
+  if (row = rs.fetchOne()) {
+    return row[0];
+  }
+  throw new Error('Event not found.');
 }
 
 /**
@@ -42,10 +46,13 @@ async function getEventDetails(session: any, eventUrl: string) {
   const rs = await session
       .sql('CALL get_event_details(?)')
       .bind(eventUrl).execute();
-  const row: [number, string, string, number] = rs.fetchOne();
-  const [ id, title, description, dateCreatedInMs ] = row;
-  const dateCreated = new Date(dateCreatedInMs);
-  return { id, eventUrl, title, description, dateCreated };
+  let row: [number, string, string, number];
+  if (row = rs.fetchOne()) {
+    const [id, title, description, dateCreatedInMs] = row;
+    const dateCreated = new Date(dateCreatedInMs);
+    return { id, eventUrl, title, description, dateCreated };
+  }
+  throw new Error('Event not found.');
 }
 
 /**
@@ -137,17 +144,18 @@ async function insertEventAndUserDetails(
     session: any, title: string, description: string,
     username: string, passwordHash: string) {
   const rs = await session
-    .sql('CALL insert_new_event(?, ?, ?, ?)')
-    .bind([title, description, username, passwordHash]).execute();
+      .sql('CALL insert_new_event(?, ?, ?, ?)')
+      .bind([title, description, username, passwordHash]).execute();
   const newId: number = rs.fetchOne()[0];
 
   let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '3', 10);
-  while (true) {
+  let retries = 5;
+  while (retries-- > 0) {
     try {
       const eventUrl: string = generateId(newId, numAdjectives);
       await session
-        .sql('CALL update_url_id(?, ?)')
-        .bind([newId, eventUrl]).execute();
+          .sql('CALL update_url_id(?, ?)')
+          .bind([newId, eventUrl]).execute();
       return { newId, eventUrl };
     } catch (err) {
       const { info } = err;
@@ -160,6 +168,7 @@ async function insertEventAndUserDetails(
       throw err;
     }
   }
+  throw new Error('Unable to generate event URL.');
 }
 
 /**

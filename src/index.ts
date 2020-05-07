@@ -17,7 +17,7 @@ const app: Application = express();
 configureApp(app);
 const httpsServer: Server = getHttpsServer(app);
 
-app.post('/new', async (req, res, next) => {
+app.post('/new', async (req, res) => {
   try {
     const { username, password, title, description, eventIntervals }: {
       username: string, password: string,
@@ -34,11 +34,14 @@ app.post('/new', async (req, res, next) => {
         session, title, description, username, passwordHash, parsedIntervals);
     await login(session, res, newId, eventUrl, username);
   } catch (err) {
-    next(err);
+    res.status(400);
+    res.send({
+      error: err.message,
+    });
   }
 });
 
-app.post('/:eventUrl/new_user', async (req, res, next) => {
+app.post('/:eventUrl/new_user', async (req, res) => {
   try {
     const { eventUrl } = req.params;
     const { username, password, intervals }: {
@@ -56,16 +59,17 @@ app.post('/:eventUrl/new_user', async (req, res, next) => {
         session, eventId, username, passwordHash, parsedIntervals);
     login(session, res, eventId, eventUrl, username);
   } catch (err) {
-    console.log(err);
+    res.status(400);
     const { info } = err;
     if (info?.code === DB_DUPLICATE_ENTRY) {
-      res.status(400);
       res.send({
         error: 'Username already taken.',
         code: info.code,
       });
     }
-    next(err);
+    res.send({
+      error: err.message,
+    });
   }
 });
 
@@ -86,7 +90,6 @@ app.post('/:eventUrl/login', async (req, res) => {
     if (!valid) throw new Error('Password invalid');
     await login(session, res, eventId, eventUrl, username);
   } catch (err) {
-    console.log(err);
     res.status(400);
     res.send({
       error: err.message,
@@ -102,7 +105,7 @@ app.post('/:eventUrl/logout', async (req, res) => {
   });
 });
 
-app.post('/:eventUrl/refresh_token', async (req, res, next) => {
+app.post('/:eventUrl/refresh_token', async (req, res) => {
   try {
     const { eventUrl } = req.params;
     const { refreshToken }: { refreshToken: string } = req.cookies;
@@ -136,7 +139,7 @@ app.post('/:eventUrl/:username/edit', (req, res) => {
   res.send(`Updating user: ${username} information on eventUrl: ${eventUrl}.`);
 });
 
-app.get('/:eventUrl', async (req, res, next) => {
+app.get('/:eventUrl', async (req, res) => {
   try {
     const { eventUrl } = req.params;
 
@@ -144,7 +147,10 @@ app.get('/:eventUrl', async (req, res, next) => {
     const event = await database.getEvent(session, eventUrl);
     res.send(event);
   } catch (err) {
-    next(err);
+    res.status(400);
+    res.send({
+      error: err.message,
+    });
   }
 });
 
