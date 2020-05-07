@@ -1,16 +1,15 @@
 import { generateId } from 'gfycat-ids';
 
 import Interval from '../types/Interval';
+import { insertUserIntervals } from './userAccess';
 
 /**
  * Get details of an event.
- * @param client: The database client.
+ * @param session: The current database session.
  * @param urlId The url identifier of the event.
  * @returns An object describing an event.
  */
-export async function getEvent(client: any, urlId: string) {
-  const session = await client.getSession();
-
+export async function getEvent(session: any, urlId: string) {
   const details = await getEventDetails(session, urlId);
   const { id } = details;
   return ({
@@ -92,7 +91,7 @@ async function getEventUserIntervals(session: any, id: number) {
 
 /**
  * Insert a new event into the database.
- * @param client: The database client.
+ * @param session: The current database session.
  * @param title The title of the event.
  * @param description The description of the event.
  * @param username The username of the person creating the event.
@@ -103,9 +102,8 @@ async function getEventUserIntervals(session: any, id: number) {
  * @returns An object with the new internal identifier and new url idenfifier.
  */
 export async function createNewEvent(
-    client: any, title: string, description: string,
+    session: any, title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
-  const session = await client.getSession();
 
   const { newId, urlId } = await insertEventAndUserDetails(
       session, title, description, username, passwordHash);
@@ -127,7 +125,7 @@ async function insertEventAndUserDetails(
     session: any, title: string, description: string,
     username: string, passwordHash: string) {
   const rs = await session
-      .sql('CALL create_new_event(?, ?, ?, ?)')
+      .sql('CALL insert_new_event(?, ?, ?, ?)')
       .bind([title, description, username, passwordHash]).execute();
   const newId: number = rs.fetchOne()[0];
   const urlId: string = generateId(newId, 3);
@@ -153,27 +151,6 @@ async function insertEventIntervals(
   const params = eventIntervals.flatMap((interval: Interval) => {
     const { start, end } = interval.toSQL();
     return [eventId, start, end];
-  });
-  await session.sql(query).bind(params).execute();
-}
-
-/**
- * Insert schedule information of a user.
- * @param session The current database session.
- * @param eventId The internal identifier of an event.
- * @param username The username of the user.
- * @param intervals The schedule information of the user.
- */
-async function insertUserIntervals(
-    session: any, eventId: number, username: string, intervals: Interval[]) {
-  const { length } = intervals;
-  if (length === 0) return;
-  const query =
-      'INSERT INTO user_interval (event_id, username, start_dtime, end_dtime) VALUES '
-      + '(?, ?, ?, ?),'.repeat(length - 1) + '(?, ?, ?, ?)';
-  const params = intervals.flatMap((interval: Interval) => {
-    const { start, end } = interval.toSQL();
-    return [eventId, username, start, end];
   });
   await session.sql(query).bind(params).execute();
 }

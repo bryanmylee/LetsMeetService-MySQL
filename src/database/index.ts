@@ -24,10 +24,10 @@ const poolConfig = {
   }
 };
 
-const client = getClient(connConfig, poolConfig);
+export const client = getClient(connConfig, poolConfig);
 
 export default ({
-  getEvent: getEvent.bind(this, client),
-  createNewEvent: createNewEvent.bind(this, client),
-  setRefreshToken: setRefreshToken.bind(this, client),
+  getEvent,
+  createNewEvent,
+  setRefreshToken,
 });

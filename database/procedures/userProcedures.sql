@@ -15,9 +15,8 @@ CREATE PROCEDURE set_refresh_token(
         AND username = _username;
 
 CREATE PROCEDURE insert_new_user(
-        IN _event_url VARCHAR(255),
+        IN _event_id INT,
         IN _username VARCHAR(255),
         IN _password VARCHAR(255))
-    INSERT INTO event_user (event_id, username, password)
-    SELECT id, _username, _password FROM event
-    WHERE url_id = _event_url;
+    INSERT INTO event_user (event_id, username, password) VALUES
+    (_event_id, _username, _password);
