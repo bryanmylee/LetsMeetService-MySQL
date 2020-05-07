@@ -1,4 +1,3 @@
-import jwt from 'jsonwebtoken';
 import { Response, Request } from 'express';
 
 import database from './database';

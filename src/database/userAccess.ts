@@ -1,5 +1,4 @@
 import Interval from '../types/Interval';
-import { getId } from './eventAccess';
 
 /**
  * Store and associate a refresh token with a user in the database.

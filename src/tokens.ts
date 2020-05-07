@@ -1,6 +1,5 @@
 import jwt, { Secret } from 'jsonwebtoken';
 import { Response } from 'express';
-import { createNewEvent } from './database/eventAccess';
 
 export function createAccessToken(eventUrl: string, username: string) {
   const payload = {
