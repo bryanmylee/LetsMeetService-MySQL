@@ -34,6 +34,13 @@ export async function insertNewUser(
   return eventId;
 }
 
+/**
+ * Insert _shallow_ details of a new user.
+ * @param session The current database session.
+ * @param eventId The internal identifier of the event.
+ * @param username The username of the new user.
+ * @param passwordHash The password hash of the new user.
+ */
 async function insertNewUserDetails(
     session: any, eventId: number, username: string, passwordHash: string) {
   await session
