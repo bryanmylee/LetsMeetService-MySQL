@@ -124,8 +124,9 @@ async function getEventUserIntervals(session: any, id: number) {
 export async function createNewEvent(
     session: any, title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
-  const { newId, eventUrl } = await insertEventAndUserDetails(
+  const newId = await insertEventAndUserDetails(
       session, title, description, username, passwordHash);
+  const eventUrl = await updateEventUrl(session, newId);
   await insertEventIntervals(session, newId, eventIntervals);
   await insertUserIntervals(session, newId, username, eventIntervals);
   return { newId, eventUrl };
@@ -147,16 +148,19 @@ async function insertEventAndUserDetails(
       .sql('CALL insert_new_event(?, ?, ?, ?)')
       .bind([title, description, username, passwordHash]).execute();
   const newId: number = rs.fetchOne()[0];
+  return newId;
+}
 
-  let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '3', 10);
+async function updateEventUrl(session: any, eventId: number) {
+  let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '2', 10);
   let retries = 5;
   while (retries-- > 0) {
     try {
-      const eventUrl: string = generateId(newId, numAdjectives);
+      const eventUrl: string = generateId(eventId, numAdjectives);
       await session
           .sql('CALL update_url_id(?, ?)')
-          .bind([newId, eventUrl]).execute();
-      return { newId, eventUrl };
+          .bind([eventId, eventUrl]).execute();
+      return eventUrl ;
     } catch (err) {
       const { info } = err;
       // On the off chance that a duplicate identifier is generated, increase

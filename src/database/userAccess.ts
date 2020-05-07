@@ -79,9 +79,12 @@ export async function getUserCredentials(
   const rs = await session
       .sql('CALL get_user_credentials(?, ?)')
       .bind([eventId, username]).execute();
-  let row: [Buffer];
+  let row: [Buffer, boolean];
   if (row = rs.fetchOne()) {
-    return row[0].toString('utf8');
+    return ({
+      passwordHash: row[0].toString('utf8'),
+      isAdmin: row[1],
+    });
   }
   return null;
 }

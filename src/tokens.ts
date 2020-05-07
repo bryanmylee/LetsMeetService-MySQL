@@ -28,10 +28,12 @@ export function getAccessTokenPayload(token: string) {
   };
 }
 
-export function createRefreshToken(eventUrl: string, username: string) {
+export function createRefreshToken(
+    eventUrl: string, username: string, isAdmin: boolean = false) {
   const payload = {
     evt: eventUrl,
     uid: username,
+    adm: isAdmin,
   };
   return jwt.sign(
       payload,
@@ -44,10 +46,12 @@ export function getRefreshTokenPayload(token: string) {
   const payload: {
     evt: string,
     uid: string,
+    adm: boolean,
   } = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET as Secret) as any;
   return {
     eventUrl: payload.evt,
     username: payload.uid,
+    isAdmin: payload.adm,
   };
 }
 

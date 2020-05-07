@@ -28,7 +28,7 @@ CREATE PROCEDURE insert_new_user(
 CREATE PROCEDURE get_user_credentials(
         IN _event_id INT,
         IN _username VARCHAR(255))
-    SELECT password FROM event_user
+    SELECT password, is_admin FROM event_user
     WHERE event_id = _event_id
     AND username = _username;
 

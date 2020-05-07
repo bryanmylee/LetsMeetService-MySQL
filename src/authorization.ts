@@ -29,9 +29,9 @@ export function getAuthorizationPayload(req: Request) {
  */
 export async function login(
     session: any, res: Response, eventId: number,
-    eventUrl: string, username: string) {
-  const accessToken = createAccessToken(eventUrl, username);
-  const refreshToken = createRefreshToken(eventUrl, username);
+    eventUrl: string, username: string, isAdmin: boolean = false) {
+  const accessToken = createAccessToken(eventUrl, username, isAdmin);
+  const refreshToken = createRefreshToken(eventUrl, username, isAdmin);
 
   await database.setRefreshToken(session, eventId, username, refreshToken);
 

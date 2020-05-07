@@ -28,7 +28,7 @@ app.post('/new', async (req, res) => {
     const session = await client.getSession();
     const { newId, eventUrl } = await database.createNewEvent(
         session, title, description, username, passwordHash, parsedIntervals);
-    await login(session, res, newId, eventUrl, username);
+    await login(session, res, newId, eventUrl, username, true);
   } catch (err) {
     res.status(400);
     res.send({
@@ -71,7 +71,7 @@ app.post('/:eventUrl/new_user', async (req, res) => {
     const eventId = await database.getId(session, eventUrl);
     await database.insertNewUser(
         session, eventId, username, passwordHash, parsedIntervals);
-    login(session, res, eventId, eventUrl, username);
+    await login(session, res, eventId, eventUrl, username);
   } catch (err) {
     res.status(400);
     const { info } = err;
@@ -96,13 +96,13 @@ app.post('/:eventUrl/login', async (req, res) => {
 
     const session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
-    const storedHash = await database.getUserCredentials(
+    const credentials = await database.getUserCredentials(
         session, eventId, username);
-    if (storedHash === null) throw new Error('User not found.');
+    if (credentials === null) throw new Error('User not found.');
 
-    const valid = await bcrypt.compare(password, storedHash);
+    const valid = await bcrypt.compare(password, credentials.passwordHash);
     if (!valid) throw new Error('Password invalid');
-    await login(session, res, eventId, eventUrl, username);
+    await login(session, res, eventId, eventUrl, username, credentials.isAdmin);
   } catch (err) {
     res.status(400);
     res.send({
@@ -126,16 +126,17 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     if (refreshToken == null) throw new Error('Refresh token not found.');
 
     // Verify that the token is not tampered with, and retrieve the payload.
-    const { username } = getRefreshTokenPayload(refreshToken);
+    const { username, isAdmin } = getRefreshTokenPayload(refreshToken);
 
     const session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
-    const storedToken = await database.getUserRefreshToken(
+    const storedRefreshToken = await database.getUserRefreshToken(
         session, eventId, username);
-    if (storedToken == null) throw new Error('User invalid.');
-    if (storedToken !== refreshToken) throw new Error('Refresh token invalid');
-
-    login(session, res, eventId, eventUrl, username);
+    if (storedRefreshToken == null) throw new Error('User invalid.');
+    if (storedRefreshToken !== refreshToken) {
+      throw new Error('Refresh token invalid');
+    }
+    await login(session, res, eventId, eventUrl, username, isAdmin);
   } catch (err) {
     res.status(400);
     res.send({
