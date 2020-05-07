@@ -5,8 +5,8 @@ import bcrypt from 'bcryptjs';
 
 import Interval from './types/Interval';
 import { configureApp, getHttpsServer } from './setup';
-import { getEvent, createNewEvent } from './database/eventAccess';
-import { createAccessToken, createRefreshToken } from './tokens';
+import { createAccessToken, createRefreshToken, setRefreshTokenCookie } from './tokens';
+import database from './database';
 
 const app: Application = express();
 configureApp(app);
@@ -20,13 +20,21 @@ app.post('/new', async (req, res, next) => {
       eventIntervals: {start: string, end: string}[]
     } = req.body;
     const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
-    // Insert the event and user into the database
-    const { newId, urlId } = await createNewEvent(
+
+    const { newId, urlId } = await database.createNewEvent(
         title, description, username, passwordHash, parsedIntervals);
-    // Generate access and refresh tokens
-    const accessToken = createAccessToken({ username });
-    const refreshToken = createRefreshToken({ username });
-    res.send({ urlId });
+
+    const accessToken = createAccessToken({ uid: username, evt: urlId });
+    const refreshToken = createRefreshToken({ uid: username, evt: urlId });
+
+    await database.setRefreshToken(newId, username, refreshToken);
+
+    setRefreshTokenCookie(res, refreshToken, urlId);
+    res.send({
+      urlId,
+      accessToken,
+      accessTokenLifetime: process.env.ACCESS_TOKEN_EXPIRY ?? '15m',
+    });
   } catch (err) {
     return next(err);
   }
@@ -35,7 +43,7 @@ app.post('/new', async (req, res, next) => {
 app.get('/:eventId', async (req, res, next) => {
   try {
     const { eventId } = req.params;
-    const event = await getEvent(eventId);
+    const event = await database.getEvent(eventId);
     res.send(event);
   } catch (err) {
     return next(err);
