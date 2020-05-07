@@ -31,3 +31,10 @@ CREATE PROCEDURE get_user_credentials(
     SELECT password FROM event_user
     WHERE event_id = _event_id
     AND username = _username;
+
+CREATE PROCEDURE get_user_refresh_token(
+        IN _event_id INT,
+        IN _username VARCHAR(255))
+    SELECT refresh_token FROM event_user
+    WHERE event_id = _event_id
+    AND username = _username;

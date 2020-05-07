@@ -25,7 +25,7 @@ export function createRefreshToken(payload: {[key: string]: string}) {
  */
 export function setRefreshTokenCookie(
     res: Response, refreshToken: string, eventUrl: string) {
-  res.cookie('refresh', refreshToken, {
+  res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
     path: `/${eventUrl}/refresh_token`,
   });

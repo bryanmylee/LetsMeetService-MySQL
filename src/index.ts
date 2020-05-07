@@ -75,8 +75,29 @@ app.post('/:eventUrl/login', async (req, res, next) => {
   }
 });
 
-app.post('/:eventUrl/refresh_token', (req, res) => {
-  res.send('Issuing new access and refresh tokens...');
+app.post('/:eventUrl/refresh_token', async (req, res, next) => {
+  try {
+    const { eventUrl } = req.params;
+    const { refreshToken }: { refreshToken: string } = req.cookies;
+    if (refreshToken == null) throw new Error('Refresh token not found.');
+
+    // Verify that the token is not tampered with, and retrieve the payload.
+    const payload: {
+      uid: string,
+      evt: string,
+    } = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET!) as any;
+
+    const session = await client.getSession();
+    const eventId = await database.getId(session, eventUrl);
+    const storedToken = await database.getUserRefreshToken(
+        session, eventId, payload.uid);
+    if (storedToken == null) throw new Error('User invalid.');
+    if (storedToken !== refreshToken) throw new Error('Refresh token invalid');
+
+    login(session, res, eventId, eventUrl, payload.uid);
+  } catch (err) {
+    next(err);
+  }
 });
 
 app.post('/:eventUrl/:username/edit', (req, res) => {

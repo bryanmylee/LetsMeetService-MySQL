@@ -5,6 +5,7 @@ import {
   setRefreshToken,
   insertNewUser,
   getUserCredentials,
+  getUserRefreshToken,
 } from './userAccess';
 
 const {
@@ -37,4 +38,5 @@ export default ({
   setRefreshToken,
   insertNewUser,
   getUserCredentials,
+  getUserRefreshToken,
 });

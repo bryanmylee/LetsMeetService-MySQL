@@ -76,13 +76,25 @@ export async function insertUserIntervals(
  * return null.
  */
 export async function getUserCredentials(
-    session: any, eventId: number, username: string): Promise<string|null> {
+    session: any, eventId: number, username: string) {
   const rs = await session
       .sql('CALL get_user_credentials(?, ?)')
       .bind([eventId, username]).execute();
   let row: [Buffer];
   if (row = rs.fetchOne()) {
     return row[0].toString('utf8');
+  }
+  return null;
+}
+
+export async function getUserRefreshToken(
+    session: any, eventId: number, username: string) {
+  const rs = await session
+      .sql('CALL get_user_refresh_token(?, ?)')
+      .bind([eventId, username]).execute();
+  let row: [string];
+  if (row = rs.fetchOne()) {
+    return row[0];
   }
   return null;
 }
