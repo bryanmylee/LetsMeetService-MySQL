@@ -2,10 +2,10 @@ import { getClient } from '@mysql/xdevapi';
 
 import { getId, getEvent, createNewEvent } from './eventAccess';
 import {
-  setRefreshToken,
   insertNewUser,
   getUserCredentials,
-  getUserRefreshToken,
+  getRefreshToken,
+  setRefreshToken,
 } from './userAccess';
 
 const {
@@ -35,8 +35,8 @@ export default ({
   getId,
   getEvent,
   createNewEvent,
-  setRefreshToken,
   insertNewUser,
   getUserCredentials,
-  getUserRefreshToken,
+  getRefreshToken,
+  setRefreshToken,
 });

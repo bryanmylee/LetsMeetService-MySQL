@@ -1,21 +1,6 @@
 import Interval from '../types/Interval';
 
 /**
- * Store and associate a refresh token with a user in the database.
- * @param session: The current database session.
- * @param eventId The internal identifier of the event to which the user
- * belongs.
- * @param username The username of the user.
- * @param refreshToken The refresh token.
- */
-export async function setRefreshToken(
-    session: any, eventId: number, username: string, refreshToken: string) {
-  await session
-      .sql('CALL set_refresh_token(?, ?, ?)')
-      .bind([eventId, username, refreshToken]).execute();
-}
-
-/**
  * Add a new user to an event.
  * @param session The current database session.
  * @param eventId The internal identifier of the event.
@@ -26,8 +11,15 @@ export async function setRefreshToken(
 export async function insertNewUser(
     session: any, eventId: number, username: string, passwordHash: string,
     intervals: Interval[]) {
-  await insertNewUserDetails(session, eventId, username, passwordHash);
-  await insertUserIntervals(session, eventId, username, intervals);
+  session.startTransaction();
+  try {
+    await insertUserDetails(session, eventId, username, passwordHash);
+    await insertUserIntervals(session, eventId, username, intervals);
+    session.commit();
+  } catch (err) {
+    session.rollback();
+    throw err;
+  }
 }
 
 /**
@@ -37,11 +29,13 @@ export async function insertNewUser(
  * @param username The username of the new user.
  * @param passwordHash The password hash of the new user.
  */
-async function insertNewUserDetails(
+async function insertUserDetails(
     session: any, eventId: number, username: string, passwordHash: string) {
-  await session
-      .sql('CALL insert_new_user(?, ?, ?)')
-      .bind([eventId, username, passwordHash]).execute();
+  const userTable = session.getSchema('lets_meet').getTable('event_user');
+  await userTable
+      .insert(['event_id', 'username', 'password'])
+      .values(eventId, username, passwordHash)
+      .execute();
 }
 
 /**
@@ -51,18 +45,19 @@ async function insertNewUserDetails(
  * @param username The username of the user.
  * @param intervals The schedule information of the user.
  */
-export async function insertUserIntervals(
+async function insertUserIntervals(
     session: any, eventId: number, username: string, intervals: Interval[]) {
   const { length } = intervals;
   if (length === 0) return;
-  const query =
-      'INSERT INTO user_interval (event_id, username, start_dtime, end_dtime) VALUES '
-      + '(?, ?, ?, ?),'.repeat(length - 1) + '(?, ?, ?, ?)';
-  const params = intervals.flatMap((interval: Interval) => {
+  const userIntervaltable
+      = session.getSchema('lets_meet').getTable('user_interval');
+  let operation = userIntervaltable
+      .insert(['event_id', 'username', 'start_dtime', 'end_dtime']);
+  intervals.forEach((interval) => {
     const { start, end } = interval.toSQL();
-    return [eventId, username, start, end];
+    operation = operation.values(eventId, username, start, end);
   });
-  await session.sql(query).bind(params).execute();
+  await operation.execute();
 }
 
 /**
@@ -76,9 +71,12 @@ export async function insertUserIntervals(
  */
 export async function getUserCredentials(
     session: any, eventId: number, username: string) {
-  const rs = await session
-      .sql('CALL get_user_credentials(?, ?)')
-      .bind([eventId, username]).execute();
+  const userTable = session.getSchema('lets_meet').getTable('event_user');
+  const rs = await userTable
+      .select(['password', 'is_admin'])
+      .where('event_id = :event_id AND username = :username')
+      .bind('event_id', eventId).bind('username', username)
+      .execute();
   let row: [Buffer, boolean];
   if (row = rs.fetchOne()) {
     return ({
@@ -97,14 +95,36 @@ export async function getUserCredentials(
  * @param username The username of the user.
  * @returns The refresh token of the user.
  */
-export async function getUserRefreshToken(
+export async function getRefreshToken(
     session: any, eventId: number, username: string) {
-  const rs = await session
-      .sql('CALL get_user_refresh_token(?, ?)')
-      .bind([eventId, username]).execute();
+  const userTable = session.getSchema('lets_meet').getTable('event_user');
+  const rs = await userTable
+      .select(['refresh_token'])
+      .where('event_id = :event_id AND username = :username')
+      .bind('event_id', eventId).bind('username', username)
+      .execute();
   let row: [string];
   if (row = rs.fetchOne()) {
     return row[0];
   }
   return null;
+}
+
+/**
+ * Store and associate a refresh token with a user in the database.
+ * @param session: The current database session.
+ * @param eventId The internal identifier of the event to which the user
+ * belongs.
+ * @param username The username of the user.
+ * @param refreshToken The refresh token.
+ */
+export async function setRefreshToken(
+    session: any, eventId: number, username: string, refreshToken: string) {
+  const userTable = session.getSchema('lets_meet').getTable('event_user');
+  await userTable
+      .update()
+      .set('refresh_token', refreshToken)
+      .where('event_id = :event_id AND username = :username')
+      .bind('event_id', eventId).bind('username', username)
+      .execute();
 }

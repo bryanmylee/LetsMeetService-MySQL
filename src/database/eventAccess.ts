@@ -1,8 +1,9 @@
 import { generateId } from 'gfycat-ids';
 
 import Interval from '../types/Interval';
-import { insertUserIntervals } from './userAccess';
+import { insertNewUser } from './userAccess';
 import { DB_DUPLICATE_ENTRY } from '../constants';
+import dayjs from 'dayjs';
 
 /**
  * Get the internal identifier of an event.
@@ -11,8 +12,12 @@ import { DB_DUPLICATE_ENTRY } from '../constants';
  * @returns The internal identifier of an event.
  */
 export async function getId(session: any, eventUrl: string): Promise<number> {
-  const rs = await session
-      .sql('CALL get_event_id(?)').bind(eventUrl).execute();
+  const eventTable = session.getSchema('lets_meet').getTable('event');
+  const rs = await eventTable
+      .select(['id'])
+      .where('url_id = :url_id')
+      .bind('url_id', eventUrl)
+      .execute();
   let row: [number];
   if (row = rs.fetchOne()) {
     return row[0];
@@ -32,7 +37,7 @@ export async function getEvent(session: any, eventUrl: string) {
   return ({
     ...details,
     eventIntervals: await getEventIntervals(session, id),
-    userIntervals: await getEventUserIntervals(session, id),
+    userIntervalsByUsername: await getUserIntervalsByUsername(session, id),
   });
 }
 
@@ -43,13 +48,16 @@ export async function getEvent(session: any, eventUrl: string) {
  * @returns An object containing _shallow_ details of an event.
  */
 async function getEventDetails(session: any, eventUrl: string) {
-  const rs = await session
-      .sql('CALL get_event_details(?)')
-      .bind(eventUrl).execute();
+  const eventTable = session.getSchema('lets_meet').getTable('event');
+  const rs = await eventTable
+      .select(['id', 'title', 'description', 'dtime_created'])
+      .where('url_id = :url_id')
+      .bind('url_id', eventUrl)
+      .execute();
   let row: [number, string, string, number];
   if (row = rs.fetchOne()) {
     const [id, title, description, dateCreatedInMs] = row;
-    const dateCreated = new Date(dateCreatedInMs);
+    const dateCreated = dayjs(dateCreatedInMs);
     return { id, eventUrl, title, description, dateCreated };
   }
   throw new Error('Event not found.');
@@ -64,13 +72,17 @@ async function getEventDetails(session: any, eventUrl: string) {
 async function getEventIntervals(session: any, id: number) {
   const intervals: Interval[] = [];
 
-  const rs = await session
-      .sql('CALL get_event_intervals(?)')
-      .bind(id).execute();
+  const eventIntervalTable
+      = session.getSchema('lets_meet').getTable('event_interval');
+  const rs = await eventIntervalTable
+      .select(['start_dtime', 'end_dtime'])
+      .where('event_id = :event_id')
+      .bind('event_id', id)
+      .execute();
   let row: [number, number];
   while (row = rs.fetchOne()) {
     const [ startInMs, endInMs ]: number[] = row;
-    intervals.push(Interval.fromUnixTimestamp({
+    intervals.push(Interval.fromUnixTimestampMs({
       start: startInMs,
       end: endInMs,
     }));
@@ -85,16 +97,20 @@ async function getEventIntervals(session: any, id: number) {
  * @returns An object with username keys and their available intervals as
  * values.
  */
-async function getEventUserIntervals(session: any, id: number) {
+async function getUserIntervalsByUsername(session: any, id: number) {
   let intervalsByUsername: {[username: string]: Interval[]} = {};
 
-  const rs = await session
-      .sql('CALL get_event_users(?)')
-      .bind(id).execute();
+  const eventIntervalTable
+      = session.getSchema('lets_meet').getTable('user_interval');
+  const rs = await eventIntervalTable
+      .select(['username', 'start_dtime', 'end_dtime'])
+      .where('event_id = :event_id')
+      .bind('event_id', id)
+      .execute();
   let row: [string, number, number];
   while (row = rs.fetchOne()) {
     const [ username, startInMs, endInMs ] = row;
-    const interval = Interval.fromUnixTimestamp({
+    const interval = Interval.fromUnixTimestampMs({
       start: startInMs,
       end: endInMs,
     });
@@ -124,12 +140,18 @@ async function getEventUserIntervals(session: any, id: number) {
 export async function createNewEvent(
     session: any, title: string, description: string,
     username: string, passwordHash: string, eventIntervals: Interval[]) {
-  const newId = await insertEventAndUserDetails(
-      session, title, description, username, passwordHash);
-  const eventUrl = await updateEventUrl(session, newId);
-  await insertEventIntervals(session, newId, eventIntervals);
-  await insertUserIntervals(session, newId, username, eventIntervals);
-  return { newId, eventUrl };
+  session.startTransaction();
+  try {
+    const newId = await insertEventDetails(session, title, description);
+    const eventUrl = await updateEventUrl(session, newId);
+    await insertEventIntervals(session, newId, eventIntervals);
+    await insertNewUser(session, newId, username, passwordHash, eventIntervals);
+    session.commit();
+    return { newId, eventUrl };
+  } catch (err) {
+    session.rollback();
+    throw err;
+  }
 }
 
 /**
@@ -141,26 +163,32 @@ export async function createNewEvent(
  * @param passwordHash The password hash of the person creating the event.
  * @returns An object with the new internal identifier and new url idenfifier.
  */
-async function insertEventAndUserDetails(
-    session: any, title: string, description: string,
-    username: string, passwordHash: string) {
-  const rs = await session
-      .sql('CALL insert_new_event(?, ?, ?, ?)')
-      .bind([title, description, username, passwordHash]).execute();
-  const newId: number = rs.fetchOne()[0];
+async function insertEventDetails(
+    session: any, title: string, description: string) {
+  const schema = session.getSchema('lets_meet');
+  const eventTable = schema.getTable('event');
+  const newId: number = (await eventTable
+    .insert(['title', 'description'])
+    .values(title, description)
+    .execute()).getAutoIncrementValue();
   return newId;
 }
 
 async function updateEventUrl(session: any, eventId: number) {
   let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '2', 10);
   let retries = 5;
+
+  const eventTable = session.getSchema('lets_meet').getTable('event');
   while (retries-- > 0) {
     try {
       const eventUrl: string = generateId(eventId, numAdjectives);
-      await session
-          .sql('CALL update_url_id(?, ?)')
-          .bind([eventId, eventUrl]).execute();
-      return eventUrl ;
+      await eventTable
+          .update()
+          .set('url_id', eventUrl)
+          .where('id = :id')
+          .bind('id', eventId)
+          .execute();
+      return eventUrl;
     } catch (err) {
       const { info } = err;
       // On the off chance that a duplicate identifier is generated, increase
@@ -185,12 +213,13 @@ async function insertEventIntervals(
     session: any, eventId: number, eventIntervals: Interval[]) {
   const { length } = eventIntervals;
   if (length === 0) return;
-  const query =
-      'INSERT INTO event_interval (event_id, start_dtime, end_dtime) VALUES '
-      + '(?, ?, ?),'.repeat(length - 1) + '(?, ?, ?)';
-  const params = eventIntervals.flatMap((interval: Interval) => {
+  const eventIntervalTable
+      = session.getSchema('lets_meet').getTable('event_interval');
+  let operation = eventIntervalTable
+      .insert(['event_id', 'start_dtime', 'end_dtime']);
+  eventIntervals.forEach((interval) => {
     const { start, end } = interval.toSQL();
-    return [eventId, start, end];
+    operation = operation.values(eventId, start, end);
   });
-  await session.sql(query).bind(params).execute();
+  await operation.execute();
 }

@@ -130,7 +130,7 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
 
     const session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
-    const storedRefreshToken = await database.getUserRefreshToken(
+    const storedRefreshToken = await database.getRefreshToken(
         session, eventId, username);
     if (storedRefreshToken == null) throw new Error('User invalid.');
     if (storedRefreshToken !== refreshToken) {

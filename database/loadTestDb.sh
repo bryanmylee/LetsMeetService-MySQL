@@ -4,7 +4,5 @@ cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")";
 export $(egrep -v '^#' ../.env | xargs -0)
 
 mysql -u"$DB_USER" -p"$DB_PASS" < ./tables.sql;
-mysql -u"$DB_USER" -p"$DB_PASS" < ./procedures/eventProcedures.sql;
-mysql -u"$DB_USER" -p"$DB_PASS" < ./procedures/userProcedures.sql;
 mysql -u"$DB_USER" -p"$DB_PASS" < ./testData.sql;
 
