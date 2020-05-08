@@ -1,12 +1,16 @@
 import express, { Application } from 'express';
 import { Server } from 'https';
-import bcrypt from 'bcryptjs';
 
 import Interval from './types/Interval';
 import { configureApp, getHttpsServer } from './setup';
 import database, { client } from './database';
 import { DB_DUPLICATE_ENTRY } from './constants';
-import { login, getAuthorizationPayload } from './authorization';
+import {
+  generatePasswordHash,
+  comparePasswordHash,
+  getAuthorizationPayload,
+  login,
+} from './authorization';
 import { getRefreshTokenPayload } from './tokens';
 
 const app: Application = express();
@@ -21,9 +25,7 @@ app.post('/new', async (req, res) => {
       eventIntervals: {start: string, end: string}[]
     } = req.body;
     const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
-
-    const saltLength = parseInt(process.env.PASSWORD_SALT_LENGTH ?? '12', 10);
-    const passwordHash = await bcrypt.hash(password, saltLength);
+    const passwordHash = await generatePasswordHash(password);
 
     const session = await client.getSession();
     const { newId, eventUrl } = await database.createNewEvent(
@@ -63,9 +65,7 @@ app.post('/:eventUrl/new_user', async (req, res) => {
       intervals: {start: string, end: string}[]
     } = req.body;
     const parsedIntervals = intervals.map(Interval.fromISO);
-
-    const saltLength = parseInt(process.env.PASSWORD_SALT_LENGTH ?? '12', 10);
-    const passwordHash = await bcrypt.hash(password, saltLength);
+    const passwordHash = await generatePasswordHash(password);
 
     const session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
@@ -100,7 +100,7 @@ app.post('/:eventUrl/login', async (req, res) => {
         session, eventId, username);
     if (credentials === null) throw new Error('User not found.');
 
-    const valid = await bcrypt.compare(password, credentials.passwordHash);
+    const valid = await comparePasswordHash(password, credentials.passwordHash);
     if (!valid) throw new Error('Password invalid');
     await login(session, res, eventId, eventUrl, username, credentials.isAdmin);
   } catch (err) {

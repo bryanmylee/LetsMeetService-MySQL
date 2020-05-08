@@ -1,4 +1,5 @@
 import { Response, Request } from 'express';
+import bcrypt from 'bcryptjs';
 
 import database from './database';
 import { getAccessTokenPayload } from './tokens';
@@ -8,6 +9,15 @@ import {
   createRefreshToken,
   setRefreshTokenCookie
 } from './tokens';
+
+export async function generatePasswordHash(password: string) {
+  const saltLength = parseInt(process.env.PASSWORD_SALT_LENGTH ?? '12', 10);
+  return await bcrypt.hash(password, saltLength);
+}
+
+export async function comparePasswordHash(password: string, hash: string) {
+  return await bcrypt.compare(password, hash);
+}
 
 export function getAuthorizationPayload(req: Request) {
   const { authorization } = req.headers;
