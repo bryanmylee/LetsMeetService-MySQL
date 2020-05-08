@@ -1,6 +1,6 @@
 import dayjs, { Dayjs } from 'dayjs';
 
-
+// A class that represents an interval of time.
 export default class Interval {
   start: Dayjs;
   end: Dayjs;
@@ -11,10 +11,10 @@ export default class Interval {
   static fromISO(interval: {start: string, end: string}) {
     return new Interval(dayjs(interval.start), dayjs(interval.end));
   }
-  static fromUnixTimestamp(interval: {start: number, end: number}) {
+  static fromUnixTimestampSeconds(interval: {start: number, end: number}) {
     return new Interval(dayjs.unix(interval.start), dayjs.unix(interval.end));
   }
-  static fromUnixTimestampMs(interval: {start: number, end: number}) {
+  static fromUnixTimestamp(interval: {start: number, end: number}) {
     return new Interval(dayjs(interval.start), dayjs(interval.end));
   }
   toISO(): {start: string, end: string} {

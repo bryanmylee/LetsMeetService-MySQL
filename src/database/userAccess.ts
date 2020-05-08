@@ -66,8 +66,8 @@ async function insertUserIntervals(
  * @param eventId The internal identifier of the event to which the user
  * belongs.
  * @param username The username of the user to find credentials of.
- * @returns The password hash of the user account. If the user does not exist,
- * return null.
+ * @returns A promise that resolves to the password hash of the user account. If
+ * the user does not exist, return a promise that resolves to null.
  */
 export async function getUserCredentials(
     session: any, eventId: number, username: string) {
@@ -93,7 +93,7 @@ export async function getUserCredentials(
  * @param eventId The internal identifier of the event to which the user
  * belongs.
  * @param username The username of the user.
- * @returns The refresh token of the user.
+ * @returns A promise that resolves to the refresh token of the user.
  */
 export async function getRefreshToken(
     session: any, eventId: number, username: string) {

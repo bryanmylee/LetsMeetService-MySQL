@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
  * Get the internal identifier of an event.
  * @param session The current database session.
  * @param eventUrl The url identifier to convert.
- * @returns The internal identifier of an event.
+ * @returns A promise that resolves to the internal identifier of an event.
  */
 export async function getId(session: any, eventUrl: string): Promise<number> {
   const eventTable = session.getSchema('lets_meet').getTable('event');
@@ -29,7 +29,7 @@ export async function getId(session: any, eventUrl: string): Promise<number> {
  * Get details of an event.
  * @param session: The current database session.
  * @param eventUrl The url identifier of the event.
- * @returns An object describing an event.
+ * @returns A promise that resolves to an object describing an event.
  */
 export async function getEvent(session: any, eventUrl: string) {
   const details = await getEventDetails(session, eventUrl);
@@ -45,7 +45,8 @@ export async function getEvent(session: any, eventUrl: string) {
  * Get _shallow_ details of an event.
  * @param session The current database session.
  * @param eventUrl The url identifier of the event.
- * @returns An object containing _shallow_ details of an event.
+ * @returns A promise that resolves to an object containing _shallow_ details of
+ * an event.
  */
 async function getEventDetails(session: any, eventUrl: string) {
   const eventTable = session.getSchema('lets_meet').getTable('event');
@@ -67,7 +68,8 @@ async function getEventDetails(session: any, eventUrl: string) {
  * Get the available intervals of an event.
  * @param session The current database session.
  * @param id The internal identifier of the event.
- * @returns An array of intervals in which the event is available.
+ * @returns A promise that resolves to an array of intervals in which the event
+ * is available.
  */
 async function getEventIntervals(session: any, id: number) {
   const intervals: Interval[] = [];
@@ -82,7 +84,7 @@ async function getEventIntervals(session: any, id: number) {
   let row: [number, number];
   while (row = rs.fetchOne()) {
     const [ startInMs, endInMs ]: number[] = row;
-    intervals.push(Interval.fromUnixTimestampMs({
+    intervals.push(Interval.fromUnixTimestamp({
       start: startInMs,
       end: endInMs,
     }));
@@ -94,8 +96,8 @@ async function getEventIntervals(session: any, id: number) {
  * Get user schedule information of an event.
  * @param session The current database session.
  * @param id The internal identifier of the event.
- * @returns An object with username keys and their available intervals as
- * values.
+ * @returns A promise that resolves to an object with username keys and their
+ * available intervals as values.
  */
 async function getUserIntervalsByUsername(session: any, id: number) {
   let intervalsByUsername: {[username: string]: Interval[]} = {};
@@ -110,7 +112,7 @@ async function getUserIntervalsByUsername(session: any, id: number) {
   let row: [string, number, number];
   while (row = rs.fetchOne()) {
     const [ username, startInMs, endInMs ] = row;
-    const interval = Interval.fromUnixTimestampMs({
+    const interval = Interval.fromUnixTimestamp({
       start: startInMs,
       end: endInMs,
     });
@@ -135,7 +137,8 @@ async function getUserIntervalsByUsername(session: any, id: number) {
  * @param eventIntervals The intervals in which the event is available. By
  * default, the person creating the event will have the same intervals as the
  * event itself.
- * @returns An object with the new internal identifier and new url idenfifier.
+ * @returns A promise that resolves to an object with the new internal
+ * identifier and new url idenfifier.
  */
 export async function createNewEvent(
     session: any, title: string, description: string,
@@ -161,7 +164,8 @@ export async function createNewEvent(
  * @param description The description of the event.
  * @param username The username of the person creating the event.
  * @param passwordHash The password hash of the person creating the event.
- * @returns An object with the new internal identifier and new url idenfifier.
+ * @returns A promise that resolves to an object with the new internal
+ * identifier and new url idenfifier.
  */
 async function insertEventDetails(
     session: any, title: string, description: string) {
@@ -174,6 +178,12 @@ async function insertEventDetails(
   return newId;
 }
 
+/**
+ * Generate and update the url identifier of an event.
+ * @param session The current database session.
+ * @param eventId The internal identifier of the event.
+ * @returns The newly generated url identifier of the event.
+ */
 async function updateEventUrl(session: any, eventId: number) {
   let numAdjectives = parseInt(process.env.ID_NUM_ADJECTIVES ?? '2', 10);
   let retries = 5;

@@ -1,6 +1,13 @@
 import jwt, { Secret } from 'jsonwebtoken';
 import { Response } from 'express';
 
+/**
+ * Generate a signed access token with a specified payload.
+ * @param eventUrl The url identifier of the event being accessed.
+ * @param username The username of the user for the access token.
+ * @param isAdmin Whether the user is allowed to edit the event.
+ * @returns A signed access token with the specified payload.
+ */
 export function createAccessToken(
     eventUrl: string, username: string, isAdmin: boolean = false) {
   const payload = {
@@ -15,6 +22,11 @@ export function createAccessToken(
   );
 }
 
+/**
+ * Decrypt and retrieve the payload of an access token.
+ * @param token The token to decrypt.
+ * @returns The decrypted payload of the access token.
+ */
 export function getAccessTokenPayload(token: string) {
   const payload: {
     evt: string,
@@ -28,6 +40,13 @@ export function getAccessTokenPayload(token: string) {
   };
 }
 
+/**
+ * Generate a signed refresh token with a specified payload.
+ * @param eventUrl The url identifier of the event being accessed.
+ * @param username The username of the user for the access token.
+ * @param isAdmin Whether the user is allowed to edit the event.
+ * @returns A signed refresh token with the specified payload.
+ */
 export function createRefreshToken(
     eventUrl: string, username: string, isAdmin: boolean = false) {
   const payload = {
@@ -42,6 +61,11 @@ export function createRefreshToken(
   );
 }
 
+/**
+ * Decrypt and retrieve the payload of a refresh token.
+ * @param token The token to decrypt.
+ * @returns The decrypted payload of the refresh token.
+ */
 export function getRefreshTokenPayload(token: string) {
   const payload: {
     evt: string,
