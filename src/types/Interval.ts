@@ -1,4 +1,6 @@
 import dayjs, { Dayjs } from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+dayjs.extend(utc);
 
 // A class that represents an interval of time.
 export default class Interval {
@@ -9,7 +11,7 @@ export default class Interval {
     this.end = end;
   }
   static fromISO(interval: {start: string, end: string}) {
-    return new Interval(dayjs(interval.start), dayjs(interval.end));
+    return new Interval(dayjs.utc(interval.start), dayjs.utc(interval.end));
   }
   static fromUnixTimestampSeconds(interval: {start: number, end: number}) {
     return new Interval(dayjs.unix(interval.start), dayjs.unix(interval.end));
