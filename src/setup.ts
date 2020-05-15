@@ -3,6 +3,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import fs from 'fs';
 import https from 'https';
+import http from 'http';
 
 export function configureApp(app: Application) {
   // Expose simple interface for cookies
@@ -10,7 +11,7 @@ export function configureApp(app: Application) {
   // Control cross-origin resource sharing
   app.use(
     cors({
-      origin: `https://localhost:${process.env.CLIENT_PORT}`,
+      origin: `http://${process.env.CLIENT_HOST}:${process.env.CLIENT_PORT}`,
       credentials: true,
     })
   );
@@ -25,4 +26,8 @@ export function getHttpsServer(app: Application) {
   const cert = fs.readFileSync(__dirname + '/../.certs/public.pem', 'utf8');
   const passphrase = process.env.SSL_SECRET
   return https.createServer({ key, cert, passphrase }, app);
+}
+
+export function getHttpServer(app: Application) {
+  return http.createServer(app);
 }

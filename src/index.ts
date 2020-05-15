@@ -1,8 +1,9 @@
 import express, { Application } from 'express';
-import { Server } from 'https';
+// import { Server } from 'https';
+import { Server } from 'http';
 
 import Interval from './types/Interval';
-import { configureApp, getHttpsServer } from './setup';
+import { configureApp, getHttpsServer, getHttpServer } from './setup';
 import database, { client } from './database';
 import { DB_DUPLICATE_ENTRY } from './constants';
 import {
@@ -15,7 +16,8 @@ import { getRefreshTokenPayload } from './tokens';
 
 const app: Application = express();
 configureApp(app);
-const httpsServer: Server = getHttpsServer(app);
+// const httpsServer: Server = getHttpsServer(app);
+const httpServer: Server = getHttpServer(app);
 
 // Create a new event.
 app.post('/new', async (req, res) => {
@@ -208,6 +210,7 @@ app.get('/', (_, res) => {
   res.send('LetsMeet Web Service.');
 });
 
-httpsServer.listen(process.env.PORT, () => {
+// httpsServer.listen(process.env.PORT, () => {
+httpServer.listen(process.env.PORT, () => {
   console.log(`Listening on port ${process.env.PORT}`);
 });
