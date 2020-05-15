@@ -21,6 +21,7 @@ const httpServer: Server = getHttpServer(app);
 
 // Create a new event.
 app.post('/new', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { username, password, title, description, eventIntervals }: {
@@ -31,7 +32,7 @@ app.post('/new', async (req, res) => {
     const parsedIntervals: Interval[] = eventIntervals.map(Interval.fromISO);
     const passwordHash = await generatePasswordHash(password);
     // Handle database logic.
-    const session = await client.getSession();
+    session = await client.getSession();
     const { newId, eventUrl } = await database.createNewEvent(
         session, title, description, username, passwordHash, parsedIntervals);
     // Return a response.
@@ -41,6 +42,10 @@ app.post('/new', async (req, res) => {
     res.send({
       error: err.message,
     });
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 
@@ -68,6 +73,7 @@ app.post('/:eventUrl/edit', async (req, res) => {
 
 // Add a new user to an event.
 app.post('/:eventUrl/new_user', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { eventUrl } = req.params;
@@ -78,7 +84,7 @@ app.post('/:eventUrl/new_user', async (req, res) => {
     const parsedIntervals = intervals.map(Interval.fromISO);
     const passwordHash = await generatePasswordHash(password);
     // Handle database logic.
-    const session = await client.getSession();
+    session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
     await database.insertNewUser(
         session, eventId, username, passwordHash, parsedIntervals);
@@ -96,11 +102,16 @@ app.post('/:eventUrl/new_user', async (req, res) => {
     res.send({
       error: err.message,
     });
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 
 // Log a user into an event.
 app.post('/:eventUrl/login', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { eventUrl } = req.params;
@@ -108,7 +119,7 @@ app.post('/:eventUrl/login', async (req, res) => {
       username: string, password: string,
     } = req.body;
     // Handle database logic.
-    const session = await client.getSession();
+    session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
     const credentials = await database.getUserCredentials(
         session, eventId, username);
@@ -123,6 +134,10 @@ app.post('/:eventUrl/login', async (req, res) => {
     res.send({
       error: err.message,
     });
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 
@@ -139,6 +154,7 @@ app.post('/:eventUrl/logout', async (req, res) => {
 
 // Issue new access tokens.
 app.post('/:eventUrl/refresh_token', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { eventUrl } = req.params;
@@ -148,7 +164,7 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     // Verify that the token is not tampered with, and retrieve the payload.
     const { username, isAdmin } = getRefreshTokenPayload(refreshToken);
     // Handle database logic.
-    const session = await client.getSession();
+    session = await client.getSession();
     const eventId = await database.getId(session, eventUrl);
     const storedRefreshToken = await database.getRefreshToken(
         session, eventId, username);
@@ -163,6 +179,10 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     res.send({
       error: err.message,
     })
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 
@@ -190,11 +210,12 @@ app.post('/:eventUrl/:username/edit', (req, res) => {
 
 // Get event details.
 app.get('/:eventUrl', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { eventUrl } = req.params;
     // Handle database logic.
-    const session = await client.getSession();
+    session = await client.getSession();
     const event = await database.getEvent(session, eventUrl);
     // Return a response.
     res.send(event);
@@ -203,6 +224,10 @@ app.get('/:eventUrl', async (req, res) => {
     res.send({
       error: err.message,
     });
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 
