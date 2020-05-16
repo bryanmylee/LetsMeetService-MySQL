@@ -12,7 +12,9 @@ INSERT INTO `event_interval`(event_id, start_dtime, end_dtime) VALUES
 /* 6pm+8 to 10pm+8 on 6 May 2020 */
 (1, "2020-05-06 10:00:00", "2020-05-06 14:00:00"),
 /* 12pm+8 to 4pm+8 on 7 May 2020 */
-(1, "2020-05-07 04:00:00", "2020-05-06 08:00:00");
+(1, "2020-05-07 04:00:00", "2020-05-07 08:00:00"),
+/* 11pm+8 to 1am+8 on 7-8 May 2020 */
+(1, "2020-05-07 15:00:00", "2020-05-07 17:00:00");
 
 INSERT INTO `event_user`(event_id, username, password, is_admin) VALUES
 (1, "adam", "$2b$10$U0tDjy066EGn43ofqQAaKu.K6i278wcT0o7ypLi/FfHh6o496cUuS", TRUE),
@@ -26,7 +28,7 @@ INSERT INTO `user_interval`(event_id, username, start_dtime, end_dtime) VALUES
 /* 6pm+8 to 10pm+8 on 6 May 2020 */
 (1, "adam", "2020-05-06 10:00:00", "2020-05-06 14:00:00"),
 /* 12pm+8 to 4pm+8 on 7 May 2020 */
-(1, "adam", "2020-05-07 04:00:00", "2020-05-06 08:00:00"),
+(1, "adam", "2020-05-07 04:00:00", "2020-05-07 08:00:00"),
 /* Bran's timings */
 /* 12pm+8 to 2pm+8 on 6 May 2020 */
 (1, "bran", "2020-05-06 04:00:00", "2020-05-06 06:00:00"),
