@@ -1,20 +1,29 @@
 import express, { Application } from 'express';
 import cookieParser from 'cookie-parser';
-import cors from 'cors';
+import cors, { CorsOptions } from 'cors';
 import fs from 'fs';
 import https from 'https';
 import http from 'http';
+
+const whitelist = process.env.CLIENT_HOST?.split(',').map((host) =>
+    `http://${host}:${process.env.CLIENT_PORT}`);
+const corsOptions: CorsOptions = ({
+  origin: (origin, callback) => {
+    console.log(origin);
+    if (whitelist?.includes(origin!) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+});
 
 export function configureApp(app: Application) {
   // Expose simple interface for cookies
   app.use(cookieParser());
   // Control cross-origin resource sharing
-  app.use(
-    cors({
-      origin: `http://${process.env.CLIENT_HOST}:${process.env.CLIENT_PORT}`,
-      credentials: true,
-    })
-  );
+  app.use(cors(corsOptions));
   // Support JSON-encoded bodies
   app.use(express.json());
   // Support URL-encoded bodies
