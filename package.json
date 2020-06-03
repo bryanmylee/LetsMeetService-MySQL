@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "node -r dotenv/config out/index.js"
+    "start": "node -r dotenv/config out/index.js",
+    "dev": "tsc-watch --onSuccess \"npm run start\""
   },
   "repository": {
     "type": "git",
