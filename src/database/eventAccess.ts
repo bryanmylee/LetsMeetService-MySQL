@@ -31,8 +31,8 @@ export async function getId(session: any, eventUrl: string): Promise<number> {
  * @param eventUrl The url identifier of the event.
  * @returns A promise that resolves to an object describing an event.
  */
-export async function getEvent(session: any, eventUrl: string) {
-  const details = await getEventDetails(session, eventUrl);
+export async function getEvent(session: any, pool: any, eventUrl: string) {
+  const details = await getEventDetails(session, pool, eventUrl);
   const { id } = details;
   return ({
     ...details,
@@ -48,7 +48,15 @@ export async function getEvent(session: any, eventUrl: string) {
  * @returns A promise that resolves to an object containing _shallow_ details of
  * an event.
  */
-async function getEventDetails(session: any, eventUrl: string) {
+async function getEventDetails(session: any, pool: any, eventUrl: string) {
+  const client = await pool.connect();
+  try {
+    const res = await client.query(
+        'SELECT id, title, description, dtime_created FROM event WHERE url_id = $1', [eventUrl]);
+    console.log('psql', res.rows[0]);
+  } finally {
+    client.release();
+  }
   const eventTable = session.getSchema('lets_meet').getTable('event');
   const rs = await eventTable
       .select(['id', 'title', 'description', 'dtime_created'])
@@ -57,6 +65,7 @@ async function getEventDetails(session: any, eventUrl: string) {
       .execute();
   let row: [number, string, string, number];
   if (row = rs.fetchOne()) {
+    console.log('mysql', row);
     const [id, title, description, dateCreatedInMs] = row;
     const dateCreated = dayjs(dateCreatedInMs);
     return { id, eventUrl, title, description, dateCreated };

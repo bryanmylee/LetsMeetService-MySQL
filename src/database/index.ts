@@ -1,4 +1,5 @@
 import { getClient } from '@mysql/xdevapi';
+import { Client, Pool, ConnectionConfig } from 'pg';
 
 import { getId, getEvent, createNewEvent } from './eventAccess';
 import {
@@ -31,7 +32,32 @@ const poolConfig = {
   }
 };
 
+/**
+ * The client is instantiated once and exported for all routes to access.
+ * 
+ * Connection sessions are retrieved from the client's connection pool with
+ * `.getSession()`.
+ */
 export const client = getClient(connConfig, poolConfig);
+
+const {
+  PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD
+} = process.env;
+
+const pgConnConfig: ConnectionConfig = ({
+  host: PGHOST,
+  port: parseInt(PGPORT ?? '3211', 10),
+  database: PGDATABASE,
+  user: PGUSER,
+  password: PGPASSWORD,
+});
+
+const pool = new Pool(pgConnConfig);
+
+export async function getPool() {
+  // await pool.connect();
+  return pool;
+}
 
 export default ({
   getId,

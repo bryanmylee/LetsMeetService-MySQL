@@ -4,7 +4,7 @@ import { Server } from 'http';
 
 import Interval from './types/Interval';
 import { configureApp, getHttpsServer, getHttpServer } from './setup';
-import database, { client } from './database';
+import database, { client, getPool } from './database';
 import { DB_DUPLICATE_ENTRY } from './constants';
 import {
   generatePasswordHash,
@@ -211,12 +211,13 @@ app.post('/:eventUrl/:username/edit', (req, res) => {
 // Get event details.
 app.get('/:eventUrl', async (req, res) => {
   let session;
+  const pool = await getPool();
   try {
     // Parse the request.
     const { eventUrl } = req.params;
     // Handle database logic.
     session = await client.getSession();
-    const event = await database.getEvent(session, eventUrl);
+    const event = await database.getEvent(session, pool, eventUrl);
     // Return a response.
     res.send(event);
   } catch (err) {
