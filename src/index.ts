@@ -57,7 +57,7 @@ app.post('/:eventUrl/edit', async (req, res) => {
     const payload = getAuthorizationPayload(req);
     // Verify the request.
     if (!payload.isAdmin || payload.eventUrl !== eventUrl) {
-      throw new Error('Not authorized.');
+      throw new Error('Not authorized');
     }
     // Return a response.
     res.send({
@@ -95,7 +95,7 @@ app.post('/:eventUrl/new_user', async (req, res) => {
     const { info } = err;
     if (info?.code === DB_DUPLICATE_ENTRY) {
       res.send({
-        error: 'Username already taken.',
+        error: 'Username already taken',
         code: info.code,
       });
     }
@@ -123,7 +123,7 @@ app.post('/:eventUrl/login', async (req, res) => {
     const eventId = await database.getId(session, eventUrl);
     const credentials = await database.getUserCredentials(
         session, eventId, username);
-    if (credentials === null) throw new Error('User not found.');
+    if (credentials === null) throw new Error('User not found');
     // Verify the request.
     const valid = await comparePasswordHash(password, credentials.passwordHash);
     if (!valid) throw new Error('Password invalid');
@@ -160,7 +160,7 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     const { eventUrl } = req.params;
     const { refreshToken }: { refreshToken: string } = req.cookies;
     // Verify the request.
-    if (refreshToken == null) throw new Error('Refresh token not found.');
+    if (refreshToken == null) throw new Error('Refresh token not found');
     // Verify that the token is not tampered with, and retrieve the payload.
     const { username, isAdmin } = getRefreshTokenPayload(refreshToken);
     // Handle database logic.
@@ -168,7 +168,7 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
     const eventId = await database.getId(session, eventUrl);
     const storedRefreshToken = await database.getRefreshToken(
         session, eventId, username);
-    if (storedRefreshToken == null) throw new Error('User invalid.');
+    if (storedRefreshToken == null) throw new Error('User invalid');
     if (storedRefreshToken !== refreshToken) {
       throw new Error('Refresh token invalid');
     }
@@ -194,7 +194,7 @@ app.post('/:eventUrl/:username/edit', (req, res) => {
     const payload = getAuthorizationPayload(req);
     // Verify the request.
     if (payload.eventUrl !== eventUrl || payload.username !== username) {
-      throw new Error('Not authorized.');
+      throw new Error('Not authorized');
     }
     // Return a response.
     res.send({

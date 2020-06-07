@@ -22,7 +22,7 @@ export async function getId(session: any, eventUrl: string): Promise<number> {
   if (row = rs.fetchOne()) {
     return row[0];
   }
-  throw new Error('Event not found.');
+  throw new Error('Event not found');
 }
 
 /**
@@ -61,7 +61,7 @@ async function getEventDetails(session: any, eventUrl: string) {
     const dateCreated = dayjs(dateCreatedInMs);
     return { id, eventUrl, title, description, dateCreated };
   }
-  throw new Error('Event not found.');
+  throw new Error('Event not found');
 }
 
 /**
@@ -210,7 +210,7 @@ async function updateEventUrl(session: any, eventId: number) {
       throw err;
     }
   }
-  throw new Error('Unable to generate event URL.');
+  throw new Error('Unable to generate event URL');
 }
 
 /**
