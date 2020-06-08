@@ -1,5 +1,10 @@
 import Interval from '../types/Interval';
 
+export enum UserType {
+  ADMIN,
+  DEFAULT,
+};
+
 /**
  * Add a new user to an event.
  * @param session The current database session.
@@ -7,13 +12,14 @@ import Interval from '../types/Interval';
  * @param username The username of the new user.
  * @param passwordHash The password hash of the new user.
  * @param intervals The intervals which the user selected.
+ * @param userType The type of user account.
  */
 export async function insertNewUser(
     session: any, eventId: number, username: string, passwordHash: string,
-    intervals: Interval[]) {
+    intervals: Interval[], userType = UserType.DEFAULT) {
   session.startTransaction();
   try {
-    await insertUserDetails(session, eventId, username, passwordHash);
+    await insertUserDetails(session, eventId, username, passwordHash, userType);
     await insertUserIntervals(session, eventId, username, intervals);
     session.commit();
   } catch (err) {
@@ -28,13 +34,15 @@ export async function insertNewUser(
  * @param eventId The internal identifier of the event.
  * @param username The username of the new user.
  * @param passwordHash The password hash of the new user.
+ * @param userType The type of user account.
  */
 async function insertUserDetails(
-    session: any, eventId: number, username: string, passwordHash: string) {
+    session: any, eventId: number, username: string, passwordHash: string,
+    userType = UserType.DEFAULT) {
   const userTable = session.getSchema('lets_meet').getTable('event_user');
   await userTable
-      .insert(['event_id', 'username', 'password'])
-      .values(eventId, username, passwordHash)
+      .insert(['event_id', 'username', 'password', 'is_admin'])
+      .values(eventId, username, passwordHash, userType === UserType.ADMIN)
       .execute();
 }
 

@@ -1,7 +1,7 @@
 import { generateId } from 'gfycat-ids';
 
 import Interval from '../types/Interval';
-import { insertNewUser } from './userAccess';
+import { insertNewUser, UserType } from './userAccess';
 import { DB_DUPLICATE_ENTRY } from '../constants';
 import dayjs from 'dayjs';
 
@@ -148,7 +148,8 @@ export async function createNewEvent(
     const newId = await insertEventDetails(session, title, description);
     const eventUrl = await updateEventUrl(session, newId);
     await insertEventIntervals(session, newId, eventIntervals);
-    await insertNewUser(session, newId, username, passwordHash, eventIntervals);
+    await insertNewUser(
+        session, newId, username, passwordHash, eventIntervals, UserType.ADMIN);
     session.commit();
     return { newId, eventUrl };
   } catch (err) {
