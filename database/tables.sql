@@ -1,8 +1,8 @@
-DROP DATABASE IF EXISTS lets_meet;
-CREATE DATABASE lets_meet;
 USE lets_meet;
 SET GLOBAL time_zone = '+00:00';
+SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `event`;
 CREATE TABLE `event` (
     id            INT          NOT NULL AUTO_INCREMENT,
     url_id        VARCHAR(255) UNIQUE, INDEX(url_id(10)),
@@ -12,6 +12,7 @@ CREATE TABLE `event` (
     PRIMARY KEY (id)
 );
 
+DROP TABLE IF EXISTS `event_interval`;
 CREATE TABLE `event_interval` (
     event_id    INT      NOT NULL,
     start_dtime DATETIME NOT NULL,
@@ -20,6 +21,7 @@ CREATE TABLE `event_interval` (
     FOREIGN KEY (event_id) REFERENCES `event`(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS `event_user`;
 CREATE TABLE `event_user` (
     event_id      INT          NOT NULL,
     username      VARCHAR(255) NOT NULL,
@@ -30,6 +32,7 @@ CREATE TABLE `event_user` (
     FOREIGN KEY (event_id) REFERENCES `event`(id) ON DELETE CASCADE
 );
 
+DROP TABLE IF EXISTS `user_interval`;
 CREATE TABLE `user_interval` (
     event_id    INT          NOT NULL,
     username    VARCHAR(255) NOT NULL,
@@ -39,3 +42,5 @@ CREATE TABLE `user_interval` (
     FOREIGN KEY (event_id, username)
             REFERENCES `event_user`(event_id, username) ON DELETE CASCADE
 );
+
+SET FOREIGN_KEY_CHECKS = 1;
