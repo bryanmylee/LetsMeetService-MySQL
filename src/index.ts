@@ -187,24 +187,38 @@ app.post('/:eventUrl/refresh_token', async (req, res) => {
 });
 
 // Edit a user schedule.
-app.post('/:eventUrl/:username/edit', (req, res) => {
+app.post('/:eventUrl/:username/edit', async (req, res) => {
+  let session;
   try {
     // Parse the request.
     const { eventUrl, username } = req.params;
     const payload = getAuthorizationPayload(req);
+    const { intervals }: {
+      intervals: {start: string, end: string}[]
+    } = req.body;
+    const parsedIntervals = intervals.map(Interval.fromISO);
     // Verify the request.
     if (payload.eventUrl !== eventUrl || payload.username !== username) {
       throw new Error('Not authorized');
     }
+    // Handle database logic.
+    session = await client.getSession();
+    const eventId = await database.getId(session, eventUrl);
+    await database.updateUserIntervals(
+        session, eventId, username, parsedIntervals);
     // Return a response.
     res.send({
-      message: "Work in progress",
+      message: 'Updated schedule',
     });
   } catch (err) {
     res.status(400);
     res.send({
       error: err.message,
     });
+  } finally {
+    if (session) {
+      try { session.close() } catch {}
+    }
   }
 });
 

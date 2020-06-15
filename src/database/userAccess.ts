@@ -56,16 +56,55 @@ async function insertUserDetails(
 async function insertUserIntervals(
     session: any, eventId: number, username: string, intervals: Interval[]) {
   const { length } = intervals;
-  if (length === 0) return;
-  const userIntervaltable
+  if (length === 0) throw new Error('Empty schedule');
+  const userIntervalTable
       = session.getSchema('lets_meet').getTable('user_interval');
-  let operation = userIntervaltable
+  let operation = userIntervalTable
       .insert(['event_id', 'username', 'start_dtime', 'end_dtime']);
   intervals.forEach((interval) => {
     const { start, end } = interval.toSQL();
     operation = operation.values(eventId, username, start, end);
   });
   await operation.execute();
+}
+
+/**
+ * Update schedule information of a user.
+ * @param session The current database session.
+ * @param eventId The internal identifier of an event.
+ * @param username The username of the user.
+ * @param intervals The new schedule information of the user.
+ */
+export async function updateUserIntervals(
+    session: any, eventId: number, username: string, intervals: Interval[]) {
+  const { length } = intervals;
+  if (length === 0) throw new Error('Empty schedule');
+  session.startTransaction();
+  try {
+    await deleteUserIntervals(session, eventId, username);
+    await insertUserIntervals(session, eventId, username, intervals);
+    session.commit();
+  } catch (err) {
+    session.rollback();
+    throw err;
+  }
+}
+
+/**
+ * Delete schedule information of a user.
+ * @param session The current database session.
+ * @param eventId The interval identifier of an event.
+ * @param username The username of the user.
+ */
+async function deleteUserIntervals(
+    session: any, eventId: number, username: string) {
+  const userIntervalTable
+      = session.getSchema('lets_meet').getTable('user_interval');
+  userIntervalTable
+      .delete()
+      .where('event_id = :event_id AND username = :username')
+      .bind('event_id', eventId).bind('username', username)
+      .execute();
 }
 
 /**

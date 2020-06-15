@@ -9,7 +9,6 @@ const whitelist = process.env.CLIENT_HOST?.split(',').map((host) =>
     `http://${host}:${process.env.CLIENT_PORT}`);
 const corsOptions: CorsOptions = ({
   origin: (origin, callback) => {
-    console.log(origin);
     if (whitelist?.includes(origin!) || !origin) {
       callback(null, true);
     } else {
